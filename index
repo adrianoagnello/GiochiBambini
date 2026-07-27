@@ -12,7 +12,7 @@
 <div class="giochi">
 
     <a class="card" href="giochi/memory/">
-        <h2>💐 Il mio Giardino Magico</h2>
+        <h2><a href="il_mio_giardino_magico.html">💐 Il mio Giardino Magico</a></h2>
         <p>Allena la memoria.</p>
     </a>
 
