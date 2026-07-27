@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Curioso</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-top:#DCEBFF;
+    --sky-bottom:#F3E9FF;
+    --card:#FFFDFB;
+    --ink:#3A3352;
+    --purple:#8C6FD1;
+    --purple-dark:#6E51B5;
+    --teal:#4FBFAE;
+    --teal-dark:#38A091;
+    --coral:#FF9770;
+    --coral-dark:#F07750;
+    --gold:#FFC94D;
+    --wrong:#F16B6B;
+    --shadow: 0 6px 0 rgba(58,51,82,0.18);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Nunito', sans-serif;
+    background:linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%);
+    min-height:100vh;
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    padding:16px;
+  }
+  .stage{ width:100%; max-width:520px; }
+  h1{
+    font-family:'Fredoka', sans-serif;
+    text-align:center;
+    font-size:clamp(24px,6vw,32px);
+    margin:6px 0 2px;
+  }
+  .subtitle{ text-align:center; font-weight:700; color:#6b6088; margin:0 0 16px; font-size:14px; }
+
+  .stars-total{
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    font-family:'Fredoka'; font-weight:600; font-size:14px; margin-bottom:14px;
+    background:var(--card); border-radius:14px; padding:8px 12px; box-shadow:var(--shadow);
+  }
+
+  .cards{ display:flex; flex-direction:column; gap:12px; }
+  .cat-card{
+    background:var(--card); border-radius:18px; padding:16px; box-shadow:var(--shadow);
+    display:flex; align-items:center; gap:14px; cursor:pointer; border:3px solid transparent;
+    transition:transform .12s;
+  }
+  .cat-card:active{ transform:scale(0.97); }
+  .cat-card.selected{ border-color:var(--purple); }
+  .cat-card .emoji{ font-size:34px; }
+  .cat-card .txt{ flex:1; }
+  .cat-card .txt b{ font-family:'Fredoka'; font-size:17px; display:block; }
+  .cat-card .txt span{ font-size:12px; color:#7a6f96; }
+
+  .levels{ display:flex; gap:10px; margin:14px 0; }
+  .lvl-btn{
+    flex:1; font-family:'Fredoka'; font-weight:600; font-size:14px; border:none; border-radius:14px;
+    padding:12px 6px; cursor:pointer; background:var(--card); box-shadow:var(--shadow); color:var(--ink);
+  }
+  .lvl-btn.active{ background:var(--purple); color:#fff; }
+  .lvl-btn small{ display:block; font-weight:700; font-size:10px; opacity:.8; margin-top:2px; }
+
+  .start-btn{
+    width:100%; font-family:'Fredoka'; font-weight:600; font-size:17px; border:none; border-radius:16px;
+    padding:14px; cursor:pointer; background:var(--coral); color:#fff; box-shadow:var(--shadow); margin-top:6px;
+  }
+  .start-btn:active{ transform:translateY(3px); box-shadow:0 2px 0 rgba(0,0,0,0.2); }
+  .start-btn:disabled{ opacity:.5; }
+
+  .top-row{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px; flex-wrap:wrap; }
+  .pill{
+    background:var(--card); border-radius:14px; padding:8px 12px; font-family:'Fredoka'; font-weight:600;
+    font-size:13px; box-shadow:var(--shadow);
+  }
+  .progress-dots{ display:flex; gap:5px; justify-content:center; margin-bottom:16px; }
+  .dot{ width:10px; height:10px; border-radius:50%; background:#E3DCF7; }
+  .dot.done{ background:var(--teal); }
+  .dot.current{ background:var(--purple); transform:scale(1.3); }
+
+  .question-card{
+    background:var(--card); border-radius:20px; padding:22px 18px; box-shadow:var(--shadow); text-align:center;
+    margin-bottom:16px; min-height:70px; display:flex; align-items:center; justify-content:center;
+  }
+  .question-card .qtext{ font-family:'Fredoka'; font-size:clamp(18px,5vw,22px); }
+
+  .answers{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .ans-btn{
+    font-family:'Nunito'; font-weight:800; font-size:15px; border:none; border-radius:16px;
+    padding:16px 10px; cursor:pointer; background:var(--card); box-shadow:var(--shadow); color:var(--ink);
+  }
+  .ans-btn:active{ transform:translateY(3px); box-shadow:0 2px 0 rgba(0,0,0,0.15); }
+  .ans-btn.correct{ background:var(--teal); color:#fff; }
+  .ans-btn.wrong{ background:var(--wrong); color:#fff; }
+  .ans-btn.disabled{ pointer-events:none; opacity:.85; }
+  .ans-btn.dim{ opacity:.5; pointer-events:none; }
+
+  .feedback{ text-align:center; font-family:'Fredoka'; font-size:15px; margin:14px 0; min-height:22px; }
+
+  .next-btn{
+    display:block; margin:0 auto; font-family:'Fredoka'; font-weight:600; font-size:15px; border:none;
+    border-radius:14px; padding:12px 24px; cursor:pointer; background:var(--purple); color:#fff; box-shadow:var(--shadow);
+  }
+
+  .result-wrap{ text-align:center; }
+  .result-stars{ font-size:48px; margin:10px 0; letter-spacing:6px; }
+  .result-msg{ font-family:'Fredoka'; font-size:20px; margin-bottom:6px; }
+  .result-score{ font-weight:800; color:#6b6088; margin-bottom:20px; }
+  .result-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .big-btn{
+    font-family:'Fredoka'; font-weight:600; font-size:15px; border:none; border-radius:14px;
+    padding:12px 18px; cursor:pointer; background:var(--purple); color:#fff; box-shadow:var(--shadow);
+  }
+  .big-btn.secondary{ background:var(--teal); }
+  .big-btn:active{ transform:translateY(3px); box-shadow:0 2px 0 rgba(0,0,0,0.2); }
+
+  .back-link{ background:none; border:none; color:#6b6088; font-weight:800; font-size:13px; cursor:pointer; text-decoration:underline; display:block; margin:0 auto 10px; }
+
+  .import-row{ display:flex; justify-content:center; gap:14px; margin-top:14px; flex-wrap:wrap; }
+
+  .toast{
+    position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:#fff; padding:10px 18px; border-radius:14px;
+    font-weight:700; font-size:14px; opacity:0; transition:all .25s; pointer-events:none;
+    max-width:88vw; text-align:center; z-index:70;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .back-btn{
+    background:var(--card); border:none; border-radius:14px; padding:8px 12px; font-family:'Fredoka';
+    font-weight:600; font-size:13px; cursor:pointer; box-shadow:var(--shadow); color:var(--ink);
+  }
+  .back-btn:active{ transform:translateY(3px); box-shadow:0 2px 0 rgba(0,0,0,0.15); }
+
+  .loading{ text-align:center; padding:60px 0; font-family:'Fredoka'; font-size:16px; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <div class="loading">🧠 Sto preparando il quiz...</div>
+</div>
+<div id="toastEl" class="toast"></div>
+
+<script>
+(function(){
+
+const STORAGE_KEY = 'quiz-progress';
+
+const CATEGORIES = {
+  matematica: { name:'Matematica', emoji:'🔢', desc:'Addizioni, sottrazioni e tabelline' },
+  geografia:  { name:'Geografia',  emoji:'🌍', desc:'Regioni, capitali e curiosità del mondo' },
+  lingue:     { name:'Lingue',     emoji:'🗣️', desc:'Parole in inglese' },
+  scienze:    { name:'Scienze Naturali', emoji:'🌿', desc:'Piante, animali e corpo umano' },
+  astronomia: { name:'Scienze Astronomiche', emoji:'🔭', desc:'Pianeti, stelle e spazio' }
+};
+const LEVELS = [
+  { id:1, name:'Facile' },
+  { id:2, name:'Medio' },
+  { id:3, name:'Difficile' }
+];
+const QUESTIONS_PER_ROUND = 8;
+
+// ---------- Question banks: geografia & lingue ----------
+const GEO_BANK = {
+  1: [
+    {q:'Qual è la capitale d\u2019Italia?', c:'Roma', w:['Milano','Napoli','Torino']},
+    {q:'Quanti sono i continenti?', c:'6', w:['4','8','10']},
+    {q:'Di che colore è il mare sulle mappe?', c:'Blu', w:['Verde','Giallo','Rosso']},
+    {q:'In quale continente si trova l\u2019Italia?', c:'Europa', w:['Asia','Africa','America']},
+    {q:'Come si chiama la montagna più alta d\u2019Italia?', c:'Monte Bianco', w:['Vesuvio','Etna','Monte Rosa']},
+    {q:'Qual è la forma dell\u2019Italia?', c:'Uno stivale', w:['Un cerchio','Un triangolo','Una stella']},
+    {q:'Quale animale rappresenta l\u2019Italia nello sport?', c:'Azzurro (colore)', w:['Rosso','Verde','Giallo']},
+    {q:'Come si chiama il fiume più lungo d\u2019Italia?', c:'Po', w:['Tevere','Arno','Adige']},
+    {q:'Su quale isola si trova l\u2019Etna?', c:'Sicilia', w:['Sardegna','Elba','Capri']},
+    {q:'Qual è la città dei canali?', c:'Venezia', w:['Firenze','Bologna','Genova']}
+  ],
+  2: [
+    {q:'Qual è il capoluogo della Lombardia?', c:'Milano', w:['Bergamo','Brescia','Como']},
+    {q:'Qual è il capoluogo della Sicilia?', c:'Palermo', w:['Catania','Messina','Siracusa']},
+    {q:'Qual è il capoluogo della Toscana?', c:'Firenze', w:['Pisa','Siena','Lucca']},
+    {q:'Dove si trova la Torre di Pisa?', c:'Toscana', w:['Lazio','Veneto','Puglia']},
+    {q:'Qual è il capoluogo del Lazio?', c:'Roma', w:['Latina','Viterbo','Rieti']},
+    {q:'Qual è il capoluogo della Campania?', c:'Napoli', w:['Salerno','Caserta','Avellino']},
+    {q:'Quale regione ha come simbolo il Vesuvio?', c:'Campania', w:['Puglia','Calabria','Molise']},
+    {q:'In quale regione si trovano le Dolomiti?', c:'Veneto', w:['Umbria','Marche','Liguria']},
+    {q:'Qual è il capoluogo della Puglia?', c:'Bari', w:['Lecce','Taranto','Foggia']},
+    {q:'Qual è il capoluogo del Veneto?', c:'Venezia', w:['Verona','Padova','Treviso']}
+  ],
+  3: [
+    {q:'Qual è la capitale della Francia?', c:'Parigi', w:['Madrid','Berlino','Londra']},
+    {q:'Qual è la capitale della Spagna?', c:'Madrid', w:['Lisbona','Parigi','Roma']},
+    {q:'Qual è la capitale della Germania?', c:'Berlino', w:['Vienna','Monaco','Amburgo']},
+    {q:'Qual è la capitale del Regno Unito?', c:'Londra', w:['Dublino','Edimburgo','Manchester']},
+    {q:'Qual è il fiume più lungo del mondo?', c:'Rio delle Amazzoni', w:['Nilo','Mississippi','Danubio']},
+    {q:'Qual è il paese più grande del mondo?', c:'Russia', w:['Canada','Cina','Stati Uniti']},
+    {q:'In quale continente si trova l\u2019Egitto?', c:'Africa', w:['Asia','Europa','Oceania']},
+    {q:'Qual è il deserto più grande del mondo?', c:'Sahara', w:['Gobi','Kalahari','Atacama']},
+    {q:'Qual è la capitale del Giappone?', c:'Tokyo', w:['Pechino','Seul','Bangkok']},
+    {q:'Qual è l\u2019oceano più grande?', c:'Pacifico', w:['Atlantico','Indiano','Artico']}
+  ]
+};
+
+const LANG_BANK = {
+  1: [
+    {q:'Come si dice "rosso" in inglese?', c:'Red', w:['Blue','Green','Yellow']},
+    {q:'Come si dice "cane" in inglese?', c:'Dog', w:['Cat','Bird','Fish']},
+    {q:'Come si dice "uno" in inglese?', c:'One', w:['Two','Three','Four']},
+    {q:'Come si dice "gatto" in inglese?', c:'Cat', w:['Dog','Mouse','Bird']},
+    {q:'Come si dice "sole" in inglese?', c:'Sun', w:['Moon','Star','Sky']},
+    {q:'Come si dice "blu" in inglese?', c:'Blue', w:['Red','Pink','Black']},
+    {q:'Come si dice "casa" in inglese?', c:'House', w:['Car','Tree','Book']},
+    {q:'Come si dice "acqua" in inglese?', c:'Water', w:['Fire','Bread','Milk']},
+    {q:'Come si dice "cinque" in inglese?', c:'Five', w:['Six','Seven','Eight']},
+    {q:'Come si dice "verde" in inglese?', c:'Green', w:['Yellow','Purple','White']}
+  ],
+  2: [
+    {q:'Come si dice "cavallo" in inglese?', c:'Horse', w:['Cow','Sheep','Pig']},
+    {q:'Come si dice "mela" in inglese?', c:'Apple', w:['Banana','Grape','Orange']},
+    {q:'Come si dice "uccello" in inglese?', c:'Bird', w:['Fish','Bee','Frog']},
+    {q:'Come si dice "grande" in inglese?', c:'Big', w:['Small','Fast','Slow']},
+    {q:'Come si dice "piccolo" in inglese?', c:'Small', w:['Big','Tall','Short']},
+    {q:'Come si dice "pane" in inglese?', c:'Bread', w:['Cheese','Milk','Rice']},
+    {q:'Come si dice "felice" in inglese?', c:'Happy', w:['Sad','Angry','Tired']},
+    {q:'Come si dice "scuola" in inglese?', c:'School', w:['Park','Shop','Beach']},
+    {q:'Come si dice "amico" in inglese?', c:'Friend', w:['Family','Teacher','Stranger']},
+    {q:'Come si dice "libro" in inglese?', c:'Book', w:['Pen','Bag','Desk']}
+  ],
+  3: [
+    {q:'Come si dice "Ciao, come stai?" in inglese?', c:'Hello, how are you?', w:['Good morning!','See you soon!','What is your name?']},
+    {q:'Come si dice "Io sono felice" in inglese?', c:'I am happy', w:['I am tired','I am hungry','I am cold']},
+    {q:'Come si dice "ieri" in inglese?', c:'Yesterday', w:['Tomorrow','Today','Never']},
+    {q:'Come si dice "domani" in inglese?', c:'Tomorrow', w:['Yesterday','Today','Always']},
+    {q:'Come si dice "veloce" in inglese?', c:'Fast', w:['Slow','Heavy','Light']},
+    {q:'Come si dice "Quanti anni hai?" in inglese?', c:'How old are you?', w:['Where do you live?','What time is it?','How are you?']},
+    {q:'Come si dice "estate" in inglese?', c:'Summer', w:['Winter','Spring','Autumn']},
+    {q:'Come si dice "inverno" in inglese?', c:'Winter', w:['Summer','Spring','Autumn']},
+    {q:'Come si dice "grazie mille" in inglese?', c:'Thank you very much', w:['Excuse me','You are welcome','Good night']},
+    {q:'Come si dice "sto imparando" in inglese?', c:'I am learning', w:['I am sleeping','I am playing','I am eating']}
+  ]
+};
+
+const SCI_BANK = {
+  1: [
+    {q:'Cosa serve a una pianta per crescere?', c:'Acqua e luce del sole', w:['Solo il buio','Solo zucchero','Solo sale']},
+    {q:'Come si chiama il piccolo della mucca?', c:'Vitello', w:['Cucciolo','Puledro','Agnello']},
+    {q:'Da dove viene il miele?', c:'Dalle api', w:['Dalle formiche','Dai fiori direttamente','Dalle farfalle']},
+    {q:'Quante zampe ha di solito un ragno?', c:'8', w:['6','4','10']},
+    {q:'Come si chiamano gli animali che vivono nell\u2019acqua e respirano con le branchie?', c:'Pesci', w:['Uccelli','Mammiferi','Insetti']},
+    {q:'In quale stagione cadono le foglie dagli alberi?', c:'Autunno', w:['Primavera','Estate','Inverno']},
+    {q:'Quale parte della pianta assorbe l\u2019acqua dal terreno?', c:'Le radici', w:['Le foglie','I fiori','Il fusto']},
+    {q:'Cosa mangiano di solito i conigli?', c:'Verdure ed erba', w:['Carne','Pesce','Insetti']},
+    {q:'Come nascono i pulcini?', c:'Dalle uova', w:['Dal latte','Dai fiori','Dalla terra']},
+    {q:'Quanti occhi ha di solito un essere umano?', c:'2', w:['3','4','1']}
+  ],
+  2: [
+    {q:'Come si chiama un animale che mangia sia piante che carne?', c:'Onnivoro', w:['Erbivoro','Carnivoro','Insettivoro']},
+    {q:'Come si chiama il processo con cui le piante producono energia dalla luce?', c:'Fotosintesi', w:['Respirazione','Digestione','Evaporazione']},
+    {q:'Qual è la prima fase della vita di una farfalla?', c:'Uovo', w:['Crisalide','Bruco','Farfalla adulta']},
+    {q:'Quale organo del corpo pompa il sangue?', c:'Il cuore', w:['Il fegato','Lo stomaco','Il polmone']},
+    {q:'Con quale organo respiriamo?', c:'I polmoni', w:['Il cuore','Lo stomaco','I reni']},
+    {q:'Quale animale vive tipicamente nel deserto?', c:'Il cammello', w:['Il pinguino','Il delfino','L\u2019orso polare']},
+    {q:'Cosa producono le piante e che noi respiriamo?', c:'Ossigeno', w:['Anidride carbonica','Azoto','Idrogeno']},
+    {q:'Come si chiama il gruppo di animali che si nutrono solo di piante?', c:'Erbivori', w:['Carnivori','Onnivori','Predatori']},
+    {q:'Quale animale cambia colore per mimetizzarsi?', c:'Il camaleonte', w:['Il leone','L\u2019elefante','La zebra']},
+    {q:'Cosa fanno gli orsi in inverno per risparmiare energia?', c:'Vanno in letargo', w:['Migrano al mare','Cambiano colore','Fanno il nido']}
+  ],
+  3: [
+    {q:'Come si chiama il passaggio dell\u2019acqua da liquido a vapore?', c:'Evaporazione', w:['Condensazione','Solidificazione','Fusione']},
+    {q:'Quale osso protegge il cervello?', c:'Il cranio', w:['Le costole','La colonna vertebrale','Il bacino']},
+    {q:'Come si chiama il trasporto del polline che permette ai fiori di diventare frutti?', c:'Impollinazione', w:['Germinazione','Fotosintesi','Evaporazione']},
+    {q:'Oltre a solido e liquido, qual è il terzo stato della materia?', c:'Gassoso', w:['Duro','Morbido','Trasparente']},
+    {q:'Come si chiama l\u2019insieme di organi che digerisce il cibo?', c:'Apparato digerente', w:['Apparato respiratorio','Apparato scheletrico','Apparato circolatorio']},
+    {q:'Quale animale ha la gobba per conservare energia nel deserto?', c:'Il cammello', w:['Il cavallo','La renna','Il canguro']},
+    {q:'Come si chiama il ciclo naturale che comprende evaporazione, condensazione e pioggia?', c:'Ciclo dell\u2019acqua', w:['Ciclo delle stagioni','Ciclo della vita','Ciclo del carbonio']},
+    {q:'Quante ossa ha circa lo scheletro di un adulto?', c:'206', w:['100','300','50']},
+    {q:'Come si chiama l\u2019insieme di tutti gli esseri viventi e l\u2019ambiente in cui vivono?', c:'Ecosistema', w:['Catena alimentare','Fotosintesi','Habitat singolo']},
+    {q:'Quale gas è indispensabile per la respirazione degli esseri viventi?', c:'Ossigeno', w:['Anidride carbonica','Azoto','Elio']}
+  ]
+};
+
+const ASTRO_BANK = {
+  1: [
+    {q:'Quanti pianeti ci sono nel sistema solare?', c:'8', w:['9','7','10']},
+    {q:'Come si chiama la stella al centro del nostro sistema solare?', c:'Il Sole', w:['La Luna','Marte','Sirio']},
+    {q:'Come si chiama il satellite naturale della Terra?', c:'La Luna', w:['Marte','Una stella','Un asteroide']},
+    {q:'Che forma ha la Terra?', c:'Una sfera', w:['Un quadrato','Un triangolo','Una piramide']},
+    {q:'In quale pianeta viviamo?', c:'La Terra', w:['Marte','Venere','Giove']},
+    {q:'Cosa vediamo in cielo di notte insieme alla Luna?', c:'Le stelle', w:['Il sole','Le nuvole rosa','Gli arcobaleni']},
+    {q:'Quale pianeta è il più vicino al Sole?', c:'Mercurio', w:['Venere','Terra','Marte']},
+    {q:'Di che colore appare il cielo di giorno?', c:'Azzurro', w:['Verde','Viola','Arancione']},
+    {q:'Cos\u2019è il Sole?', c:'Una stella', w:['Un pianeta','Una luna','Un asteroide']},
+    {q:'Quante lune ha la Terra?', c:'Una', w:['Due','Nessuna','Tre']}
+  ],
+  2: [
+    {q:'Come si chiama il pianeta rosso?', c:'Marte', w:['Venere','Giove','Nettuno']},
+    {q:'Quale pianeta ha dei famosi anelli?', c:'Saturno', w:['Marte','Mercurio','Terra']},
+    {q:'Qual è il pianeta più grande del sistema solare?', c:'Giove', w:['Saturno','Terra','Urano']},
+    {q:'Quante ore dura circa un giorno sulla Terra?', c:'24', w:['12','48','8']},
+    {q:'Come si chiama la galassia in cui si trova il nostro sistema solare?', c:'Via Lattea', w:['Andromeda','Galassia del Sole','Nube di Magellano']},
+    {q:'Cosa cambia durante le fasi lunari?', c:'La forma della Luna che vediamo', w:['Il colore della Luna','La Luna sparisce per sempre','La Terra gira al contrario']},
+    {q:'Come si chiama una scia luminosa che attraversa velocemente il cielo di notte?', c:'Stella cadente', w:['Cometa fissa','Arcobaleno','Aurora']},
+    {q:'Chi viaggia nello spazio a bordo di razzi e navicelle?', c:'Gli astronauti', w:['I piloti','I marinai','I sommozzatori']},
+    {q:'Quale pianeta si trova tra Mercurio e la Terra?', c:'Venere', w:['Marte','Giove','Saturno']},
+    {q:'Come si chiama la coda luminosa di ghiaccio e polvere che segue alcuni corpi celesti?', c:'Cometa', w:['Meteora','Asteroide','Satellite']}
+  ],
+  3: [
+    {q:'Qual è il pianeta più caldo del sistema solare (anche se non è il più vicino al Sole)?', c:'Venere', w:['Mercurio','Marte','Nettuno']},
+    {q:'Come si chiama il fenomeno in cui la Luna copre il Sole?', c:'Eclissi solare', w:['Eclissi lunare','Aurora boreale','Cometa']},
+    {q:'Cosa sono gli asteroidi?', c:'Piccoli corpi rocciosi che orbitano nello spazio', w:['Stelle molto piccole','Pianeti nani abitati','Pezzi di Luna caduti']},
+    {q:'Qual è la differenza principale tra una stella e un pianeta?', c:'La stella produce luce propria', w:['Il pianeta è sempre più grande','La stella è sempre fredda','Non c\u2019è differenza']},
+    {q:'Chi fu il primo essere umano a camminare sulla Luna?', c:'Neil Armstrong', w:['Yuri Gagarin','Galileo Galilei','Cristoforo Colombo']},
+    {q:'Quale forza invisibile ci tiene con i piedi per terra?', c:'La gravità', w:['Il vento','Il magnetismo lunare','La pressione']},
+    {q:'Con quale strumento gli scienziati osservano da vicino stelle e pianeti lontani?', c:'Il telescopio', w:['Il microscopio','Il binocolo da caccia','Lo stetoscopio']},
+    {q:'Quanti pianeti del sistema solare hanno degli anelli visibili?', c:'4', w:['1','8','0']},
+    {q:'Come si chiama il pianeta nano che si trova oltre Nettuno?', c:'Plutone', w:['Cerere','Caronte','Sirio']},
+    {q:'Quanto tempo impiega circa la luce del Sole a raggiungere la Terra?', c:'8 minuti', w:['8 secondi','8 ore','8 giorni']}
+  ]
+};
+
+// ---------- State ----------
+let progress = { best:{}, totalStars:0 };
+let customBank = {}; // { geografia:{1:[...],2:[...],3:[...]}, lingue:{...}, ... }
+let session = null; // { category, level, questions:[...], idx, correctCount, answered:false }
+let view = 'home';
+let selectedCategory = null;
+let selectedLevel = 1;
+
+const CUSTOM_KEY = 'quiz-custom-questions';
+const IMPORTABLE_CATEGORIES = ['geografia','lingue','scienze','astronomia'];
+
+async function loadCustomBank(){
+  try{
+    const res = await window.storage.get(CUSTOM_KEY, false);
+    if(res && res.value) return JSON.parse(res.value);
+  }catch(e){ /* nessuna domanda personalizzata salvata */ }
+  return {};
+}
+async function saveCustomBank(){
+  try{ await window.storage.set(CUSTOM_KEY, JSON.stringify(customBank), false); }
+  catch(e){ console.error('Salvataggio domande personalizzate non riuscito', e); toast('⚠️ Le domande importate potrebbero non essersi salvate'); }
+}
+
+function parseQuestionsText(text){
+  const lines = text.split(/\r?\n/);
+  const result = {};
+  let curCat = null, curLevel = null;
+  let imported = 0, skipped = 0;
+
+  lines.forEach(rawLine=>{
+    const line = rawLine.trim();
+    if(!line) return;
+
+    const sectionMatch = line.match(/^##\s*([a-zA-Z]+)\s*:\s*([123])\s*$/);
+    if(sectionMatch){
+      const cat = sectionMatch[1].toLowerCase();
+      if(!IMPORTABLE_CATEGORIES.includes(cat)){ curCat=null; curLevel=null; skipped++; return; }
+      curCat = cat; curLevel = sectionMatch[2];
+      if(!result[curCat]) result[curCat] = {1:[],2:[],3:[]};
+      return;
+    }
+
+    if(line.startsWith('#')) return; // riga di commento
+
+    if(!curCat){ skipped++; return; }
+    const parts = line.split('|').map(p=>p.trim());
+    if(parts.length!==5 || parts.some(p=>!p)){ skipped++; return; }
+    const [q,c,w1,w2,w3] = parts;
+    result[curCat][curLevel].push({ q, c, w:[w1,w2,w3] });
+    imported++;
+  });
+
+  return { result, imported, skipped };
+}
+
+function mergeCustomBank(parsed){
+  Object.keys(parsed).forEach(cat=>{
+    if(!customBank[cat]) customBank[cat] = {1:[],2:[],3:[]};
+    [1,2,3].forEach(lvl=>{
+      const items = parsed[cat][lvl] || [];
+      if(items.length) customBank[cat][lvl] = customBank[cat][lvl].concat(items);
+    });
+  });
+}
+
+function downloadTemplate(){
+  const template = `# MODELLO DOMANDE - Quiz Curioso
+# ---------------------------------------------
+# Come si usa:
+# 1) Ogni sezione inizia con ## materia:livello
+#    Materie disponibili: geografia, lingue, scienze, astronomia
+#    (la matematica genera le domande automaticamente e non si importa)
+#    Livelli disponibili: 1 (Facile), 2 (Medio), 3 (Difficile)
+# 2) Ogni domanda va su una riga, con questo formato:
+#    Domanda?|Risposta corretta|Risposta sbagliata 1|Risposta sbagliata 2|Risposta sbagliata 3
+# 3) Le righe che iniziano con # sono commenti e vengono ignorate
+# 4) Salva il file come .txt e poi usa "Importa domande" nel gioco
+# ---------------------------------------------
+
+## geografia:1
+Qual è il continente più grande?|Asia|Europa|Africa|Oceania
+
+## lingue:2
+Come si dice "sedia" in inglese?|Chair|Table|Door|Window
+
+## scienze:3
+Come si chiama il processo di respirazione delle piante di notte?|Respirazione cellulare|Fotosintesi|Traspirazione|Germinazione
+
+## astronomia:1
+Come si chiama il nostro pianeta?|Terra|Marte|Venere|Giove
+`;
+  const blob = new Blob([template], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'modello_domande_quiz.txt';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+
+function triggerImport(){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.txt';
+  input.onchange = (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev)=>{
+      const { result, imported, skipped } = parseQuestionsText(ev.target.result);
+      if(imported===0){
+        toast('Nessuna domanda valida trovata nel file 😕');
+        return;
+      }
+      mergeCustomBank(result);
+      await saveCustomBank();
+      renderHome();
+      toast(`✅ ${imported} domande importate${skipped?` (${skipped} righe ignorate)`:''}`);
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+const stageEl = document.getElementById('stage');
+const toastEl = document.getElementById('toastEl');
+
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>toastEl.classList.remove('show'), 2200);
+}
+
+function keyFor(cat,lvl){ return cat+'-'+lvl; }
+
+async function loadProgress(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    if(res && res.value) return JSON.parse(res.value);
+  }catch(e){ /* nothing saved yet */ }
+  return { best:{}, totalStars:0 };
+}
+async function saveProgress(){
+  recomputeTotalStars();
+  try{ await window.storage.set(STORAGE_KEY, JSON.stringify(progress), false); }
+  catch(e){ console.error('Salvataggio non riuscito', e); }
+}
+function recomputeTotalStars(){
+  let total = 0;
+  Object.values(progress.best).forEach(b=>{ total += (b.stars||0); });
+  progress.totalStars = total;
+}
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+// ---------- Math question generator ----------
+function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+function genMathQuestion(level){
+  let a,b,op,answer,text;
+  if(level===1){
+    op = Math.random()<0.5 ? '+' : '-';
+    if(op==='+'){ a=randInt(1,8); b=randInt(1,8-0); a=randInt(1,9); b=randInt(0,9-a>=0?9-a:0); answer=a+b; }
+    else { a=randInt(2,10); b=randInt(0,a); answer=a-b; }
+    text = `${a} ${op} ${b} = ?`;
+  } else if(level===2){
+    const r = Math.random();
+    if(r<0.4){ op='+'; a=randInt(5,40); b=randInt(5,40); answer=a+b; text=`${a} + ${b} = ?`; }
+    else if(r<0.7){ op='-'; a=randInt(10,50); b=randInt(1,a); answer=a-b; text=`${a} - ${b} = ?`; }
+    else { const table=[2,5,10][randInt(0,2)]; b=randInt(1,10); answer=table*b; text=`${table} x ${b} = ?`; }
+  } else {
+    const r = Math.random();
+    if(r<0.45){ a=randInt(2,10); b=randInt(2,10); answer=a*b; text=`${a} x ${b} = ?`; }
+    else if(r<0.75){ a=randInt(20,99); b=randInt(1,a-1); answer=a-b; text=`${a} - ${b} = ?`; }
+    else { const table=randInt(2,9); const mult=randInt(1,10); const product=table*mult; answer=mult; text=`${product} : ${table} = ?`; }
+  }
+  const opts = new Set([answer]);
+  while(opts.size<4){
+    const delta = randInt(-5,5) || 1;
+    const candidate = answer + delta*(randInt(1,3));
+    if(candidate>=0 && candidate!==answer) opts.add(candidate);
+  }
+  const options = shuffle(Array.from(opts)).map(String);
+  const correctIndex = options.indexOf(String(answer));
+  return { text, options, correctIndex };
+}
+
+function buildQuestionSet(category, level){
+  const qs = [];
+  if(category==='matematica'){
+    const seen = new Set();
+    while(qs.length<QUESTIONS_PER_ROUND){
+      const q = genMathQuestion(level);
+      if(seen.has(q.text)) continue;
+      seen.add(q.text);
+      qs.push(q);
+    }
+  } else {
+    let bank;
+    if(category==='geografia') bank = GEO_BANK[level];
+    else if(category==='lingue') bank = LANG_BANK[level];
+    else if(category==='scienze') bank = SCI_BANK[level];
+    else if(category==='astronomia') bank = ASTRO_BANK[level];
+    const custom = (customBank[category] && customBank[category][level]) || [];
+    const fullBank = bank.concat(custom);
+    const picked = shuffle(fullBank).slice(0, QUESTIONS_PER_ROUND);
+    picked.forEach(item=>{
+      const options = shuffle([item.c, ...item.w]);
+      qs.push({ text:item.q, options, correctIndex: options.indexOf(item.c) });
+    });
+  }
+  return qs;
+}
+
+// ---------- Rendering: HOME ----------
+function renderHome(){
+  const catCards = Object.keys(CATEGORIES).map(key=>{
+    const c = CATEGORIES[key];
+    return `<div class="cat-card ${selectedCategory===key?'selected':''}" data-cat="${key}">
+      <div class="emoji">${c.emoji}</div>
+      <div class="txt"><b>${c.name}</b><span>${c.desc}</span></div>
+    </div>`;
+  }).join('');
+
+  const levelBtns = LEVELS.map(l=>{
+    const key = selectedCategory ? keyFor(selectedCategory,l.id) : null;
+    const best = key ? progress.best[key] : null;
+    const starsTxt = best ? '⭐'.repeat(best.stars) : '';
+    return `<button class="lvl-btn ${selectedLevel===l.id?'active':''}" data-lvl="${l.id}">${l.name}<small>${starsTxt||'&nbsp;'}</small></button>`;
+  }).join('');
+
+  stageEl.innerHTML = `
+    <h1>🧠 Quiz Curioso</h1>
+    <p class="subtitle">Matematica, geografia e lingue: mettiti alla prova!</p>
+    <div class="stars-total">⭐ Stelle totali raccolte: ${progress.totalStars}</div>
+    <div class="cards">${catCards}</div>
+    ${selectedCategory ? `<div class="levels">${levelBtns}</div>` : ''}
+    <button class="start-btn" id="startBtn" ${selectedCategory?'':'disabled'}>Inizia il quiz! 🚀</button>
+    <div class="import-row">
+      <button class="link-btn" id="downloadTemplateBtn">📄 Scarica modello domande</button>
+      <button class="link-btn" id="importBtn">📥 Importa domande da file</button>
+    </div>
+  `;
+
+  document.querySelectorAll('.cat-card').forEach(el=>{
+    el.onclick = ()=>{ selectedCategory = el.dataset.cat; renderHome(); };
+  });
+  document.querySelectorAll('.lvl-btn').forEach(el=>{
+    el.onclick = ()=>{ selectedLevel = parseInt(el.dataset.lvl,10); renderHome(); };
+  });
+  const startBtn = document.getElementById('startBtn');
+  if(startBtn && selectedCategory){
+    startBtn.onclick = ()=> startSession(selectedCategory, selectedLevel);
+  }
+  document.getElementById('downloadTemplateBtn').onclick = downloadTemplate;
+  document.getElementById('importBtn').onclick = triggerImport;
+}
+
+// ---------- Session flow ----------
+function startSession(category, level){
+  session = {
+    category, level,
+    questions: buildQuestionSet(category, level),
+    idx: 0,
+    correctCount: 0,
+    answered:false
+  };
+  view='quiz';
+  renderQuiz();
+}
+
+function renderQuiz(){
+  const q = session.questions[session.idx];
+  const dots = session.questions.map((_,i)=>{
+    let cls='dot';
+    if(i<session.idx) cls+=' done';
+    else if(i===session.idx) cls+=' current';
+    return `<div class="${cls}"></div>`;
+  }).join('');
+
+  stageEl.innerHTML = `
+    <div class="top-row">
+      <button class="back-btn" id="backBtn">← Indietro</button>
+      <div class="pill">${CATEGORIES[session.category].emoji} ${CATEGORIES[session.category].name}</div>
+      <div class="pill">✅ ${session.correctCount}/${session.questions.length}</div>
+    </div>
+    <div class="progress-dots">${dots}</div>
+    <div class="question-card"><div class="qtext">${q.text}</div></div>
+    <div class="answers" id="answers">
+      ${q.options.map((opt,i)=>`<button class="ans-btn" data-i="${i}">${opt}</button>`).join('')}
+    </div>
+    <div class="feedback" id="feedback"></div>
+    <div id="nextWrap" style="text-align:center; min-height:48px;"></div>
+  `;
+
+  document.getElementById('backBtn').onclick = ()=>{ view='home'; renderHome(); };
+
+  document.querySelectorAll('.ans-btn').forEach(btn=>{
+    btn.onclick = ()=> onAnswer(parseInt(btn.dataset.i,10));
+  });
+}
+
+const CHEERS_RIGHT = ['Bravissima! 🎉','Esatto! ✨','Perfetto! 🌟','Ottimo lavoro! 👏'];
+const CHEERS_WRONG = ['Quasi! Riprova la prossima 💪','Non preoccuparti, si impara così! 🌱','Andiamo avanti insieme! 😊'];
+
+function onAnswer(i){
+  if(session.answered) return;
+  session.answered = true;
+  const q = session.questions[session.idx];
+  const buttons = document.querySelectorAll('.ans-btn');
+  const feedback = document.getElementById('feedback');
+  const isCorrect = i===q.correctIndex;
+
+  buttons.forEach((btn,idx)=>{
+    btn.classList.add('disabled');
+    if(idx===q.correctIndex) btn.classList.add('correct');
+    else if(idx===i) btn.classList.add('wrong');
+    else btn.classList.add('dim');
+  });
+
+  if(isCorrect){
+    session.correctCount++;
+    feedback.textContent = CHEERS_RIGHT[Math.floor(Math.random()*CHEERS_RIGHT.length)];
+  } else {
+    feedback.textContent = CHEERS_WRONG[Math.floor(Math.random()*CHEERS_WRONG.length)];
+  }
+
+  const isLast = session.idx === session.questions.length-1;
+  document.getElementById('nextWrap').innerHTML =
+    `<button class="next-btn" id="nextBtn">${isLast?'Vedi risultato 🏁':'Avanti ➡️'}</button>`;
+  document.getElementById('nextBtn').onclick = ()=>{
+    if(isLast) finishSession();
+    else { session.idx++; session.answered=false; renderQuiz(); }
+  };
+}
+
+function starsFor(correct,total){
+  const pct = correct/total;
+  if(pct>=0.875) return 3;
+  if(pct>=0.625) return 2;
+  if(pct>=0.375) return 1;
+  return 0;
+}
+
+function finishSession(){
+  const total = session.questions.length;
+  const stars = starsFor(session.correctCount, total);
+  const key = keyFor(session.category, session.level);
+  const prevBest = progress.best[key];
+  if(!prevBest || session.correctCount > prevBest.correct){
+    progress.best[key] = { correct: session.correctCount, total, stars };
+  } else if(stars > (prevBest.stars||0)){
+    progress.best[key].stars = stars;
+  }
+  saveProgress();
+  view='result';
+  renderResult(stars, total);
+}
+
+function renderResult(stars, total){
+  const starIcons = '⭐'.repeat(stars) + '☆'.repeat(3-stars);
+  let msg;
+  if(stars===3) msg = 'Straordinario! Sei una vera esperta! 🏆';
+  else if(stars===2) msg = 'Bravissima, continua così! 🎈';
+  else if(stars===1) msg = 'Bel lavoro, ci sei quasi! 🌼';
+  else msg = 'Hai iniziato benissimo, riprova quando vuoi! 🌱';
+
+  stageEl.innerHTML = `
+    <div class="result-wrap">
+      <h1>${CATEGORIES[session.category].emoji} Risultato</h1>
+      <div class="result-stars">${starIcons}</div>
+      <div class="result-msg">${msg}</div>
+      <div class="result-score">Risposte corrette: ${session.correctCount} su ${total}</div>
+      <div class="result-actions">
+        <button class="big-btn" id="retryBtn">🔁 Rigioca</button>
+        <button class="big-btn secondary" id="homeBtn">🏠 Cambia materia</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('retryBtn').onclick = ()=> startSession(session.category, session.level);
+  document.getElementById('homeBtn').onclick = ()=>{ view='home'; renderHome(); };
+}
+
+// ---------- Init ----------
+(async function init(){
+  progress = await loadProgress();
+  customBank = await loadCustomBank();
+  renderHome();
+})();
+
+})();
+</script>
+</body>
+</html>
