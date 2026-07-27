@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Il Mio Giardino Magico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-top:#BFE9F7;
+    --sky-bottom:#EAF6D9;
+    --soil:#8B5E3C;
+    --soil-dark:#6B4423;
+    --grass:#8FCB6B;
+    --grass-dark:#6FAE4A;
+    --sun:#FFD966;
+    --coral:#FF9770;
+    --coral-dark:#F07750;
+    --leaf:#4CAF7D;
+    --leaf-dark:#399367;
+    --ink:#4A3B32;
+    --card:#FFFDF8;
+    --shadow: 0 6px 0 rgba(74,59,50,0.18);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Nunito', sans-serif;
+    background:linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 65%, var(--grass) 65%, var(--grass-dark) 100%);
+    min-height:100vh;
+    overflow-x:hidden;
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    padding:16px;
+  }
+  .stage{
+    width:100%;
+    max-width:560px;
+  }
+  h1{
+    font-family:'Fredoka', sans-serif;
+    text-align:center;
+    font-size:clamp(24px,6vw,34px);
+    color:var(--ink);
+    margin:6px 0 2px;
+    text-shadow: 0 2px 0 rgba(255,255,255,0.6);
+  }
+  .subtitle{
+    text-align:center;
+    font-weight:700;
+    color:#5c7a4a;
+    margin:0 0 14px;
+    font-size:14px;
+  }
+  .sun-wrap{
+    position:relative;
+    height:0;
+  }
+  .sun{
+    position:absolute;
+    top:-8px; right:20px;
+    width:54px; height:54px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, #FFF3C4, var(--sun));
+    box-shadow:0 0 24px 6px rgba(255,217,102,0.6);
+    animation: bob 6s ease-in-out infinite;
+  }
+  @keyframes bob{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+
+  .toolbar{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+  }
+  .tool-btn{
+    font-family:'Fredoka', sans-serif;
+    font-size:15px;
+    font-weight:600;
+    border:none;
+    border-radius:16px;
+    padding:10px 16px;
+    cursor:pointer;
+    background:var(--card);
+    box-shadow:var(--shadow);
+    color:var(--ink);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    transition:transform .12s;
+  }
+  .tool-btn:active{ transform:translateY(4px); box-shadow:0 2px 0 rgba(74,59,50,0.18); }
+  .tool-btn.active{ background:var(--coral); color:#fff; }
+  .tool-btn .ic{ font-size:20px; }
+
+  .garden{
+    background:var(--soil);
+    border-radius:22px;
+    padding:14px;
+    box-shadow: inset 0 4px 12px rgba(0,0,0,0.15), var(--shadow);
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    position:relative;
+  }
+  .plot{
+    background:var(--soil-dark);
+    border-radius:14px;
+    aspect-ratio:1/1.15;
+    position:relative;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    cursor:pointer;
+    overflow:visible;
+    transition:transform .15s;
+  }
+  .plot:active{ transform:scale(0.96); }
+  .plot svg{ width:80%; height:95%; overflow:visible; }
+  .plot.bloom svg{ animation: sway 3.4s ease-in-out infinite; transform-origin:bottom center; }
+  @keyframes sway{ 0%,100%{transform:rotate(-2deg)} 50%{transform:rotate(2deg)} }
+
+  .droplet{
+    position:absolute; top:-10px; left:50%; transform:translateX(-50%);
+    font-size:20px;
+    animation:drop 0.6s ease-in forwards;
+    pointer-events:none;
+  }
+  @keyframes drop{ 0%{ top:-10px; opacity:1 } 100%{ top:60%; opacity:0 } }
+
+  .harvest-badge{
+    position:absolute; top:-10px; right:-6px;
+    background:var(--coral);
+    color:#fff;
+    font-size:11px;
+    font-weight:800;
+    padding:4px 8px;
+    border-radius:10px;
+    box-shadow:0 2px 0 rgba(0,0,0,0.2);
+  }
+
+  .seed-picker{
+    position:absolute;
+    z-index:20;
+    background:var(--card);
+    border-radius:16px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.25);
+    padding:10px;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+    width:210px;
+  }
+  .seed-opt{
+    background:#fff6ec;
+    border:2px solid #f1dcc4;
+    border-radius:10px;
+    padding:6px;
+    text-align:center;
+    cursor:pointer;
+  }
+  .seed-opt svg{ width:100%; height:36px; }
+  .seed-opt span{ display:block; font-size:10px; font-weight:800; margin-top:2px; }
+  .seed-opt:active{ transform:scale(0.94); }
+
+  .footer-row{
+    display:flex; justify-content:center; gap:10px; margin-top:14px;
+  }
+  .link-btn{
+    background:none; border:none; color:#5c7a4a; font-weight:800; font-size:13px; cursor:pointer; text-decoration:underline;
+  }
+
+  .toast{
+    position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:#fff; padding:10px 18px; border-radius:14px;
+    font-weight:700; font-size:14px; opacity:0; transition:all .25s; pointer-events:none;
+    max-width:88vw; text-align:center;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .overlay{
+    position:fixed; inset:0; background:rgba(74,59,50,0.55);
+    display:flex; align-items:center; justify-content:center; z-index:50;
+    padding:16px;
+  }
+  .modal{
+    background:var(--card); border-radius:20px; padding:20px; max-width:400px; width:100%;
+    text-align:center; box-shadow:0 12px 30px rgba(0,0,0,0.3);
+  }
+  .modal h2{ font-family:'Fredoka'; margin-top:0; font-size:20px; }
+  .modal p{ font-size:14px; line-height:1.5; }
+  .big-btn{
+    font-family:'Fredoka'; font-weight:600; font-size:15px; border:none; border-radius:14px;
+    padding:12px 18px; cursor:pointer; background:var(--coral); color:#fff; box-shadow:var(--shadow);
+    margin:6px 4px 0;
+  }
+  .big-btn.secondary{ background:var(--leaf); }
+  .big-btn:active{ transform:translateY(3px); box-shadow:0 2px 0 rgba(0,0,0,0.2); }
+
+  .postcard-frame{
+    background:linear-gradient(180deg,#fff, #FFF6E8);
+    border-radius:16px; padding:12px; border:4px solid #FFE1B8;
+  }
+  #postcard-canvas{ width:100%; border-radius:10px; display:block; }
+
+  .book-grid{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:10px; max-height:260px; overflow-y:auto;
+  }
+  .book-item{ background:#fff6ec; border-radius:10px; padding:4px; }
+  .book-item svg{ width:100%; height:44px; }
+  .book-item small{ display:block; font-size:9px; font-weight:800; }
+  .empty-book{ font-size:13px; color:#8a7a6c; padding:16px 0; }
+
+  .loading{ text-align:center; padding:60px 0; font-family:'Fredoka'; font-size:16px; }
+
+  .butterfly{
+    position:absolute;
+    top:-6px; left:8%;
+    font-size:18px;
+    animation: flutter 3.2s ease-in-out infinite;
+    pointer-events:none;
+  }
+  .bee{
+    position:absolute;
+    top:-4px; left:10%;
+    font-size:16px;
+    animation: buzz 2.4s ease-in-out infinite;
+    pointer-events:none;
+  }
+  @keyframes buzz{
+    0%,100%{ transform:translate(0,0) rotate(0deg); }
+    20%{ transform:translate(8px,-3px) rotate(8deg); }
+    40%{ transform:translate(2px,3px) rotate(-6deg); }
+    60%{ transform:translate(10px,1px) rotate(6deg); }
+    80%{ transform:translate(3px,-4px) rotate(-4deg); }
+  }
+  @keyframes flutter{
+    0%,100%{ transform:translate(0,0) rotate(0deg); }
+    25%{ transform:translate(-6px,-8px) rotate(-8deg); }
+    50%{ transform:translate(2px,-4px) rotate(6deg); }
+    75%{ transform:translate(-3px,-10px) rotate(-4deg); }
+  }
+
+  .mission-banner{
+    background:var(--card);
+    border-radius:16px;
+    padding:10px 14px;
+    box-shadow:var(--shadow);
+    text-align:center;
+    font-weight:800;
+    font-size:13px;
+    margin-bottom:12px;
+    color:var(--ink);
+  }
+  .mission-banner.done{ background:var(--leaf); color:#fff; }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <div class="loading" id="loading">🌼 Sto aprendo il tuo giardino...</div>
+</div>
+
+<div id="toastEl" class="toast"></div>
+
+<script>
+(function(){
+
+const STORAGE_KEY = 'garden-state';
+const PLOT_COUNT = 12;
+const WATER_PER_STAGE = 2; // clicks needed to move to next stage
+const FLOWER_TYPES = {
+  girasole: { name:'Girasole', petal:'#F4B942', petalDark:'#E29A1F', center:'#7A4A22' },
+  tulipano: { name:'Tulipano', petal:'#E8607A', petalDark:'#C8425F', center:'#8C3D52' },
+  rosa:     { name:'Rosa',     petal:'#D6455B', petalDark:'#B22F45', center:'#6E1E30' },
+  margherita:{name:'Margherita',petal:'#FFFFFF', petalDark:'#F7D74B', center:'#E7B92E' },
+  papavero: { name:'Papavero', petal:'#E8432E', petalDark:'#C22D1A', center:'#2A2118' },
+  lavanda:  { name:'Lavanda',  petal:'#9C7FD1', petalDark:'#7C5CB8', center:'#5FAE5A' }
+};
+const MISSION_TARGETS = [2,3,3,4];
+
+let state = null;
+let mode = 'zappa'; // 'zappa' | 'pianta' | 'annaffia'
+let openPickerPlot = null;
+let outsideHandler = null;
+
+const stageEl = document.getElementById('stage');
+const toastEl = document.getElementById('toastEl');
+
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>toastEl.classList.remove('show'), 1800);
+}
+
+const CHEERS = [
+  'Che bello! 🌞','Il fiorellino ti ringrazia! 💧','Sta crescendo benissimo! 🌱',
+  'Continua così! ✨','Bravissima giardiniera! 🌼','Un goccio in più, che gioia!'
+];
+function cheer(){ toast(CHEERS[Math.floor(Math.random()*CHEERS.length)]); }
+
+function todayStr(){
+  return new Date().toLocaleDateString('it-IT');
+}
+
+function freshMission(){
+  return {
+    date: todayStr(),
+    target: MISSION_TARGETS[Math.floor(Math.random()*MISSION_TARGETS.length)],
+    progress: 0
+  };
+}
+
+async function loadState(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    if(res && res.value){
+      const loaded = JSON.parse(res.value);
+      if(loaded.plots.length < PLOT_COUNT){
+        loaded.plots = loaded.plots.concat(Array.from({length:PLOT_COUNT-loaded.plots.length}, ()=>null));
+      }
+      loaded.plots = loaded.plots.map(p=>{
+        if(p && p.tilled===undefined) p.tilled = true; // vecchi salvataggi: già coltivate
+        return p;
+      });
+      if(!loaded.mission || loaded.mission.date !== todayStr()){
+        loaded.mission = freshMission();
+      }
+      return loaded;
+    }
+  }catch(e){ /* nothing saved yet */ }
+  return {
+    plots: Array.from({length:PLOT_COUNT}, ()=>null),
+    collection: [],
+    mission: freshMission()
+  };
+}
+
+async function saveState(){
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
+  }catch(e){ console.error('Salvataggio non riuscito', e); }
+}
+
+// ---------- Flower drawing ----------
+function leafShape(x,y,flip){
+  const s = flip?-1:1;
+  return `<ellipse cx="${x}" cy="${y}" rx="10" ry="5" fill="#5FAE5A" stroke="#3E8B3E" stroke-width="1" transform="rotate(${flip?25:-25} ${x} ${y})"/>`;
+}
+
+function wildSoilSVG(){
+  return `<svg viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="128" rx="30" ry="9" fill="#6B4423"/>
+    <circle cx="36" cy="124" r="5" fill="#9B9088"/>
+    <circle cx="62" cy="127" r="4" fill="#7D746C"/>
+    <circle cx="50" cy="120" r="3.5" fill="#9B9088"/>
+    <path d="M30 118 Q33 108 28 100" stroke="#4E8A3E" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M68 116 Q66 106 72 98" stroke="#4E8A3E" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M52 118 Q56 106 50 96" stroke="#5FAE5A" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function tilledEmptySVG(){
+  return `<svg viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="128" rx="30" ry="9" fill="#6B4423"/>
+    <path d="M24 126 Q50 118 76 126" stroke="#5A3A20" stroke-width="2" fill="none" opacity="0.6"/>
+    <path d="M26 121 Q50 114 74 121" stroke="#5A3A20" stroke-width="2" fill="none" opacity="0.5"/>
+  </svg>`;
+}
+
+function flowerSVG(type, stage){
+  const f = FLOWER_TYPES[type] || FLOWER_TYPES.girasole;
+  let stem = '', leaves = '', head = '', mound = `<ellipse cx="50" cy="128" rx="30" ry="9" fill="#6B4423"/>`;
+
+  if(stage===0){
+    return `<svg viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">${mound}
+      <ellipse cx="50" cy="122" rx="6" ry="4" fill="#4A2E1A"/>
+    </svg>`;
+  }
+  if(stage===1){
+    stem = `<rect x="47" y="95" width="6" height="30" rx="3" fill="#5FAE5A"/>`;
+    leaves = leafShape(38,112,true)+leafShape(62,112,false);
+    return `<svg viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">${mound}${stem}${leaves}</svg>`;
+  }
+  if(stage===2){
+    stem = `<rect x="47" y="70" width="6" height="55" rx="3" fill="#5FAE5A"/>`;
+    leaves = leafShape(36,105,true)+leafShape(64,105,false);
+    head = `<ellipse cx="50" cy="66" rx="9" ry="13" fill="${f.petalDark}"/>`;
+    return `<svg viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">${mound}${stem}${leaves}${head}</svg>`;
+  }
+  // stage 3: full bloom, per type
+  stem = `<rect x="47" y="55" width="6" height="70" rx="3" fill="#5FAE5A"/>`;
+  leaves = leafShape(34,98,true)+leafShape(66,98,false);
+
+  if(type==='girasole'){
+    let petals='';
+    for(let i=0;i<12;i++){
+      const ang = (360/12)*i;
+      petals += `<ellipse cx="50" cy="30" rx="7" ry="17" fill="${f.petal}" transform="rotate(${ang} 50 50)"/>`;
+    }
+    head = `<g>${petals}<circle cx="50" cy="50" r="14" fill="${f.center}"/></g>`;
+  } else if(type==='tulipano'){
+    head = `<g>
+      <path d="M50 20 C34 26 32 46 50 56 C68 46 66 26 50 20 Z" fill="${f.petal}"/>
+      <path d="M50 22 C40 30 40 46 50 54 C48 40 48 30 50 22 Z" fill="${f.petalDark}"/>
+      <path d="M38 32 C34 40 38 50 47 55 L45 33 Z" fill="${f.petalDark}"/>
+      <path d="M62 32 C66 40 62 50 53 55 L55 33 Z" fill="${f.petalDark}"/>
+    </g>`;
+  } else if(type==='rosa'){
+    let layers='';
+    const sizes=[20,15,10,6];
+    sizes.forEach((r,i)=>{ layers += `<circle cx="50" cy="42" r="${r}" fill="${i%2? f.petalDark:f.petal}" opacity="0.95"/>`; });
+    head = `<g>${layers}</g>`;
+  } else if(type==='margherita'){
+    let petals='';
+    for(let i=0;i<10;i++){
+      const ang=(360/10)*i;
+      petals += `<ellipse cx="50" cy="26" rx="5" ry="15" fill="${f.petal}" stroke="#eee" stroke-width="0.5" transform="rotate(${ang} 50 42)"/>`;
+    }
+    head = `<g>${petals}<circle cx="50" cy="42" r="9" fill="${f.center}"/></g>`;
+  } else if(type==='papavero'){
+    let petals='';
+    for(let i=0;i<4;i++){
+      const ang=(360/4)*i + 45;
+      petals += `<ellipse cx="50" cy="32" rx="15" ry="17" fill="${f.petal}" transform="rotate(${ang} 50 46)"/>`;
+    }
+    head = `<g>${petals}<circle cx="50" cy="46" r="7" fill="${f.center}"/></g>`;
+  } else { // lavanda: small spike of purple buds, no single big head
+    stem = `<rect x="47" y="35" width="6" height="90" rx="3" fill="#5FAE5A"/>`;
+    let buds='';
+    for(let i=0;i<8;i++){
+      const y = 20 + i*7;
+      const off = (i%2===0)? -6 : 6;
+      buds += `<circle cx="${50+off}" cy="${y}" r="5" fill="${i%2? f.petalDark:f.petal}"/>`;
+    }
+    head = `<g>${buds}</g>`;
+  }
+
+  return `<svg viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">${mound}${stem}${leaves}${head}</svg>`;
+}
+
+// ---------- Rendering ----------
+function render(){
+  stageEl.innerHTML = `
+    <div class="sun-wrap"><div class="sun"></div></div>
+    <h1>🌷 Il Mio Giardino Magico</h1>
+    <p class="subtitle">Pianta, annaffia e guarda crescere i tuoi fiori!</p>
+    <div class="toolbar">
+      <button class="tool-btn ${mode==='zappa'?'active':''}" id="btnZappa"><span class="ic">🪓</span>Lavora</button>
+      <button class="tool-btn ${mode==='pianta'?'active':''}" id="btnPianta"><span class="ic">🌱</span>Pianta</button>
+      <button class="tool-btn ${mode==='annaffia'?'active':''}" id="btnAnnaffia"><span class="ic">💧</span>Annaffia</button>
+      <button class="tool-btn" id="btnLibro"><span class="ic">📖</span>Il mio erbario</button>
+    </div>
+    <div class="mission-banner ${state.mission.progress>=state.mission.target?'done':''}">
+      ${state.mission.progress>=state.mission.target
+        ? `🎉 Missione di oggi completata! Hai fatto sbocciare ${state.mission.target} fiori!`
+        : `🌸 Missione di oggi: fai sbocciare ${state.mission.target} fiori (${state.mission.progress}/${state.mission.target})`}
+    </div>
+    <div class="garden" id="garden"></div>
+    <div class="footer-row">
+      <button class="link-btn" id="btnReset">Ricomincia il giardino</button>
+    </div>
+  `;
+  const garden = document.getElementById('garden');
+  const cur = cursorFor(mode);
+  garden.style.cursor = cur;
+  state.plots.forEach((plot, idx)=>{
+    const div = document.createElement('div');
+    const isPlanted = plot && plot.type;
+    div.className = 'plot' + (isPlanted && plot.stage===3 ? ' bloom':'');
+    div.dataset.idx = idx;
+    div.style.cursor = cur;
+    if(!plot){
+      div.innerHTML = wildSoilSVG();
+    } else if(!plot.type){
+      div.innerHTML = tilledEmptySVG();
+    } else {
+      div.innerHTML = flowerSVG(plot.type, plot.stage);
+      if(plot.stage===3){
+        const badge = document.createElement('div');
+        badge.className='harvest-badge';
+        badge.textContent='Cogli 🌸';
+        div.appendChild(badge);
+        if(!plot.visitor) plot.visitor = Math.random()<0.5 ? 'butterfly' : 'bee';
+        const visitor = document.createElement('div');
+        if(plot.visitor==='bee'){
+          visitor.className='bee';
+          visitor.textContent='🐝';
+        } else {
+          visitor.className='butterfly';
+          visitor.textContent='🦋';
+        }
+        visitor.style.animationDelay = (idx%5)*0.4+'s';
+        div.appendChild(visitor);
+      }
+    }
+    div.addEventListener('click', (e)=>onPlotClick(idx, e));
+    garden.appendChild(div);
+  });
+
+  document.getElementById('btnZappa').onclick = ()=>{ mode='zappa'; closePicker(); render(); };
+  document.getElementById('btnPianta').onclick = ()=>{ mode='pianta'; closePicker(); render(); };
+  document.getElementById('btnAnnaffia').onclick = ()=>{ mode='annaffia'; closePicker(); render(); };
+  document.getElementById('btnLibro').onclick = openBook;
+  document.getElementById('btnReset').onclick = openResetConfirm;
+}
+
+function cursorFor(m){
+  const svgs = {
+    zappa: `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g transform='rotate(45 16 16)'><rect x='14' y='4' width='4' height='18' rx='2' fill='%238B5E3C'/><rect x='9' y='2' width='14' height='6' rx='2' fill='%23A8A8A8'/></g></svg>`,
+    pianta: `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><ellipse cx='16' cy='27' rx='8' ry='3' fill='%236B4423'/><path d='M16 24 C10 20 10 12 16 6 C22 12 22 20 16 24 Z' fill='%234CAF7D'/><circle cx='16' cy='15' r='3' fill='%23F4B942'/></svg>`,
+    annaffia: `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><rect x='6' y='14' width='14' height='10' rx='3' fill='%234FBFAE'/><path d='M20 16 L28 12 L28 16 L22 19 Z' fill='%234FBFAE'/><rect x='9' y='8' width='4' height='7' rx='2' fill='%234FBFAE'/><circle cx='27' cy='11' r='1.4' fill='%23BFE9F7'/><circle cx='24' cy='9' r='1.2' fill='%23BFE9F7'/></svg>`
+  };
+  const hotspots = { zappa:'4 4', pianta:'4 28', annaffia:'2 2' };
+  const svg = svgs[m] || svgs.pianta;
+  return `url("data:image/svg+xml;utf8,${svg}") ${hotspots[m]}, pointer`;
+}
+
+function closePicker(){
+  openPickerPlot = null;
+  const existing = document.querySelector('.seed-picker');
+  if(existing) existing.remove();
+  if(outsideHandler){
+    document.removeEventListener('click', outsideHandler, true);
+    outsideHandler = null;
+  }
+}
+
+function onPlotClick(idx, evt){
+  const plot = state.plots[idx];
+
+  if(mode==='zappa'){
+    if(plot){ toast('Questa zolla è già pronta per essere piantata! 🌿'); return; }
+    state.plots[idx] = { tilled:true };
+    saveState();
+    render();
+    toast('Terreno pronto! Ora scegli "Pianta" per seminare 🌱');
+    return;
+  }
+
+  if(mode==='pianta'){
+    if(!plot){ toast('Prima lavora la terra con la zappa! 🪓'); return; }
+    if(plot.type){ toast("Qui c'è già un fiore che cresce!"); return; }
+    closePicker();
+    showSeedPicker(idx, evt.currentTarget);
+    return;
+  }
+
+  // modalita annaffia
+  if(!plot || !plot.type){ toast('Prima pianta un seme qui! 🌱'); return; }
+  if(plot.stage===3){ harvestFlower(idx); return; }
+
+  plot.water = (plot.water||0) + 1;
+  showDroplet(evt.currentTarget);
+  if(plot.water >= WATER_PER_STAGE){
+    plot.water = 0;
+    const wasBloom = plot.stage===3;
+    plot.stage = Math.min(3, plot.stage+1);
+    if(plot.stage===3 && !wasBloom){
+      plot.visitor = Math.random()<0.5 ? 'butterfly' : 'bee';
+      state.mission.progress = Math.min(state.mission.target, state.mission.progress+1);
+      if(state.mission.progress===state.mission.target){
+        setTimeout(()=>toast('🎉 Missione di oggi completata! Bravissima!'), 400);
+      }
+    }
+  }
+  saveState();
+  render();
+  cheer();
+}
+
+function showDroplet(target){
+  const d = document.createElement('div');
+  d.className='droplet';
+  d.textContent='💧';
+  target.appendChild(d);
+  setTimeout(()=>d.remove(), 650);
+}
+
+function showSeedPicker(idx, target){
+  openPickerPlot = idx;
+  const picker = document.createElement('div');
+  picker.className='seed-picker';
+  Object.keys(FLOWER_TYPES).forEach(type=>{
+    const f = FLOWER_TYPES[type];
+    const opt = document.createElement('div');
+    opt.className='seed-opt';
+    opt.innerHTML = flowerSVG(type,3) + `<span>${f.name}</span>`;
+    opt.onclick = (e)=>{
+      e.stopPropagation();
+      const plot = state.plots[idx] || {tilled:true};
+      plot.type = type; plot.stage = 0; plot.water = 0;
+      state.plots[idx] = plot;
+      closePicker();
+      saveState();
+      render();
+      toast('Seme piantato! Ora annaffialo con amore 💧');
+    };
+    picker.appendChild(opt);
+  });
+  target.appendChild(picker);
+  picker.style.top = '10px';
+  picker.style.left = '50%';
+  picker.style.transform = 'translateX(-50%)';
+
+  if(outsideHandler){
+    document.removeEventListener('click', outsideHandler, true);
+    outsideHandler = null;
+  }
+  setTimeout(()=>{
+    outsideHandler = function(e){
+      if(!picker.contains(e.target)){ closePicker(); }
+    };
+    document.addEventListener('click', outsideHandler, true);
+  },0);
+}
+
+function harvestFlower(idx){
+  const plot = state.plots[idx];
+  const record = {
+    id: Date.now()+'-'+idx,
+    type: plot.type,
+    date: new Date().toLocaleDateString('it-IT')
+  };
+  state.collection.push(record);
+  state.plots[idx] = { tilled:true };
+  saveState();
+  render();
+  openPostcard(record);
+}
+
+// ---------- Erbario (collection book) ----------
+function openBook(){
+  const overlay = document.createElement('div');
+  overlay.className='overlay';
+  const items = state.collection.length ? state.collection.map(r=>{
+    return `<div class="book-item">${flowerSVG(r.type,3)}<small>${FLOWER_TYPES[r.type].name}<br>${r.date}</small></div>`;
+  }).join('') : `<div class="empty-book">Non hai ancora colto fiori. Fai crescere e cogli il tuo primo fiore! 🌱</div>`;
+
+  overlay.innerHTML = `
+    <div class="modal">
+      <h2>📖 Il mio erbario</h2>
+      <div class="book-grid">${items}</div>
+      <button class="big-btn" id="closeBook">Chiudi</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',(e)=>{ if(e.target===overlay) overlay.remove(); });
+  document.getElementById('closeBook').onclick = ()=>overlay.remove();
+}
+
+// ---------- Postcard / harvest image ----------
+function buildPostcardSVG(record){
+  const f = FLOWER_TYPES[record.type];
+  const flowerInner = flowerSVG(record.type,3).replace(/^<svg[^>]*>/,'').replace('</svg>','');
+  return `
+  <svg viewBox="0 0 400 480" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="400" height="480" rx="28" fill="#FFFDF8"/>
+    <rect x="10" y="10" width="380" height="460" rx="22" fill="none" stroke="#FFE1B8" stroke-width="6"/>
+    <rect x="0" y="0" width="400" height="150" fill="#BFE9F7"/>
+    <rect x="0" y="150" width="400" height="330" fill="#EAF6D9"/>
+    <circle cx="340" cy="60" r="30" fill="#FFD966"/>
+    <g transform="translate(120,80) scale(1.6)">${flowerInner}</g>
+    <text x="200" y="345" font-family="Verdana" font-size="26" font-weight="700" fill="#4A3B32" text-anchor="middle">${f.name}</text>
+    <text x="200" y="378" font-family="Verdana" font-size="15" fill="#5c7a4a" text-anchor="middle">Coltivato con amore il ${record.date}</text>
+    <text x="200" y="435" font-family="Verdana" font-size="16" fill="#4A3B32" text-anchor="middle">🌼 Il Mio Giardino Magico 🌼</text>
+  </svg>`;
+}
+
+function openPostcard(record){
+  const overlay = document.createElement('div');
+  overlay.className='overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h2>Hai colto: ${FLOWER_TYPES[record.type].name}! 🌸</h2>
+      <div class="postcard-frame">
+        <canvas id="postcard-canvas" width="400" height="480"></canvas>
+      </div>
+      <p>Scarica l'immagine e allegala a un'email per condividerla!</p>
+      <button class="big-btn" id="downloadImg">⬇️ Scarica immagine</button>
+      <button class="big-btn secondary" id="closePostcard">Chiudi</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const svgStr = buildPostcardSVG(record);
+  const canvas = document.getElementById('postcard-canvas');
+  const ctx = canvas.getContext('2d');
+  const img = new Image();
+  const svgBlob = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
+  img.onload = ()=>{ ctx.drawImage(img,0,0,400,480); };
+  img.src = svgBlob;
+
+  document.getElementById('downloadImg').onclick = ()=>{
+    const link = document.createElement('a');
+    link.download = `fiore-${record.type}-${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  };
+  document.getElementById('closePostcard').onclick = ()=>overlay.remove();
+  overlay.addEventListener('click',(e)=>{ if(e.target===overlay) overlay.remove(); });
+}
+
+// ---------- Reset ----------
+function openResetConfirm(){
+  const overlay = document.createElement('div');
+  overlay.className='overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h2>Vuoi ricominciare?</h2>
+      <p>Il tuo giardino e il tuo erbario verranno svuotati. Questa azione non si può annullare.</p>
+      <button class="big-btn" id="confirmReset">Sì, ricomincia</button>
+      <button class="big-btn secondary" id="cancelReset">Annulla</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  document.getElementById('cancelReset').onclick = ()=>overlay.remove();
+  document.getElementById('confirmReset').onclick = ()=>{
+    state = { plots: Array.from({length:PLOT_COUNT}, ()=>null), collection: [], mission: freshMission() };
+    saveState();
+    overlay.remove();
+    render();
+  };
+}
+
+// ---------- Init ----------
+(async function init(){
+  state = await loadState();
+  render();
+})();
+
+})();
+</script>
+</body>
+</html>
