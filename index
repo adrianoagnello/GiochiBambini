@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Giochi per Bambini</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>🎮 Giochi per Bambini</h1>
+
+<div class="giochi">
+
+    <a class="card" href="giochi/memory/">
+        <h2>🧠 Memory</h2>
+        <p>Allena la memoria.</p>
+    </a>
+
+    <a class="card" href="giochi/puzzle/">
+        <h2>🧩 Puzzle</h2>
+        <p>Ricomponi l'immagine.</p>
+    </a>
+
+    <a class="card" href="giochi/conta/">
+        <h2>🔢 Impara a contare</h2>
+        <p>Conta insieme agli animali.</p>
+    </a>
+
+</div>
+
+</body>
+</html>
