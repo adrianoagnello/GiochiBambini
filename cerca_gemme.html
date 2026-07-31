@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Cerca delle Gemme Magiche</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-top:#BFE9F7;
+    --sky-bottom:#EAF6D9;
+    --grass:#8FCB6B;
+    --grass-dark:#6FAE4A;
+    --card:#FFFDF8;
+    --ink:#4A3B32;
+    --coral:#FF9770;
+    --coral-dark:#F07750;
+    --leaf:#4CAF7D;
+    --leaf-dark:#399367;
+    --gem:#5EC8E0;
+    --stone:#9C8B7A;
+    --shadow: 0 6px 0 rgba(74,59,50,0.18);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0;
+    font-family:'Nunito', sans-serif;
+    background:linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%);
+    min-height:100vh;
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    padding:14px;
+    user-select:none;
+  }
+  .stage{ width:100%; max-width:640px; }
+  h1{
+    font-family:'Fredoka', sans-serif;
+    text-align:center;
+    font-size:clamp(22px,6vw,30px);
+    margin:4px 0 2px;
+  }
+  .subtitle{ text-align:center; font-weight:700; color:#5c7a4a; margin:0 0 12px; font-size:13px; }
+
+  .home-card{ background:var(--card); border-radius:20px; padding:20px; box-shadow:var(--shadow); text-align:center; }
+  .home-card p{ line-height:1.5; font-size:14px; }
+  .big-btn{
+    font-family:'Fredoka'; font-weight:600; font-size:16px; border:none; border-radius:16px;
+    padding:14px 22px; cursor:pointer; background:var(--coral); color:#fff; box-shadow:var(--shadow); margin-top:8px;
+  }
+  .big-btn:active{ transform:translateY(3px); box-shadow:0 2px 0 rgba(0,0,0,0.2); }
+  .big-btn.secondary{ background:var(--leaf); }
+  .level-picker{ display:flex; gap:8px; justify-content:center; margin:12px 0; flex-wrap:wrap; }
+  .level-chip{
+    font-family:'Fredoka'; font-weight:600; font-size:13px; border:none; border-radius:12px;
+    padding:8px 14px; cursor:pointer; background:#fff; box-shadow:var(--shadow); color:var(--ink);
+  }
+  .level-chip.locked{ opacity:.45; cursor:not-allowed; }
+  .level-chip small{ display:block; font-size:10px; }
+
+  .hud{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap; }
+  .pill{
+    background:var(--card); border-radius:14px; padding:7px 12px; font-family:'Fredoka'; font-weight:600;
+    font-size:13px; box-shadow:var(--shadow);
+  }
+  .back-btn{
+    background:var(--card); border:none; border-radius:14px; padding:7px 12px; font-family:'Fredoka';
+    font-weight:600; font-size:13px; cursor:pointer; box-shadow:var(--shadow); color:var(--ink);
+  }
+
+  .game-wrap{ position:relative; width:100%; aspect-ratio:3/2; border-radius:20px; overflow:hidden;
+    background:linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 35%, var(--grass) 35%, var(--grass-dark) 100%);
+    box-shadow:var(--shadow); touch-action:none;
+  }
+  .entity{ position:absolute; transform:translate(-50%,-50%); pointer-events:none; }
+  .entity svg{ display:block; width:100%; height:100%; overflow:visible; }
+  .npc, .creature{ pointer-events:auto; cursor:pointer; }
+  .npc.traded{ opacity:.55; }
+
+  .trade-prompt{
+    position:absolute; transform:translate(-50%,-165%); pointer-events:auto; z-index:10;
+    font-family:'Fredoka'; font-weight:600; font-size:12px; border:none; border-radius:12px;
+    padding:5px 10px; cursor:pointer; background:var(--coral); color:#fff; box-shadow:0 3px 0 rgba(74,59,50,0.25);
+    white-space:nowrap; animation: promptPulse 1s ease-in-out infinite;
+  }
+  @keyframes promptPulse{ 0%,100%{ transform:translate(-50%,-165%) scale(1); } 50%{ transform:translate(-50%,-165%) scale(1.08); } }
+
+  .gem-sparkle{ animation: sparkle 1.6s ease-in-out infinite; }
+  @keyframes sparkle{ 0%,100%{ transform:translate(-50%,-50%) scale(1); } 50%{ transform:translate(-50%,-50%) scale(1.15); } }
+
+  .character{ z-index:5; transition: none; }
+  .bump{ animation: bump 0.4s ease; }
+  @keyframes bump{ 0%{ filter:none; } 40%{ filter:brightness(1.6) saturate(0.6); } 100%{ filter:none; } }
+
+  .controls{ display:flex; justify-content:space-between; align-items:center; margin-top:12px; }
+  .dpad{ display:grid; grid-template-columns:repeat(3,44px); grid-template-rows:repeat(3,44px); gap:4px; }
+  .dpad button{
+    border:none; border-radius:12px; background:var(--card); box-shadow:var(--shadow); font-size:18px; cursor:pointer;
+  }
+  .dpad button:active{ transform:translateY(2px); box-shadow:0 2px 0 rgba(0,0,0,0.18); }
+  .dpad .up{ grid-column:2; grid-row:1; }
+  .dpad .left{ grid-column:1; grid-row:2; }
+  .dpad .right{ grid-column:3; grid-row:2; }
+  .dpad .down{ grid-column:2; grid-row:3; }
+  .hint{ font-size:12px; color:#7a6f5c; font-weight:700; text-align:right; max-width:180px; }
+
+  .toast{
+    position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:#fff; padding:10px 18px; border-radius:14px;
+    font-weight:700; font-size:14px; opacity:0; transition:all .25s; pointer-events:none;
+    max-width:88vw; text-align:center; z-index:70;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .overlay{ position:fixed; inset:0; background:rgba(74,59,50,0.55); display:flex; align-items:center; justify-content:center; z-index:80; padding:16px; }
+  .modal{ background:var(--card); border-radius:20px; padding:24px; max-width:380px; width:100%; text-align:center; box-shadow:0 12px 30px rgba(0,0,0,0.3); }
+  .modal h2{ font-family:'Fredoka'; margin-top:0; }
+  .modal .stars{ font-size:40px; letter-spacing:6px; margin:10px 0; }
+
+  .loading{ text-align:center; padding:60px 0; font-family:'Fredoka'; font-size:16px; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <div class="loading">💎 Sto preparando l'avventura...</div>
+</div>
+<div id="toastEl" class="toast"></div>
+
+<script>
+(function(){
+
+const STORAGE_KEY = 'gem-quest-progress';
+const MOVE_SPEED = 0.9;
+const CHAR_R = 4.2;
+
+const LEVELS = [
+  {
+    id:1, name:'Il Prato Fiorito',
+    intro:'Usa le frecce (o i pulsanti) per muoverti e raccogli tutte le gemme! ✨',
+    start:{x:8,y:50},
+    stonesStart:0,
+    gemsNeeded:4,
+    gems:[{id:'g1',x:30,y:20},{id:'g2',x:50,y:75},{id:'g3',x:72,y:30},{id:'g4',x:88,y:60}],
+    rocks:[{x:48,y:50,r:6}],
+    creatures:[],
+    npcs:[],
+    extraStones:[]
+  },
+  {
+    id:2, name:'Il Ruscello degli Amici',
+    intro:'Hai 3 pietre 🪨 in tasca: tocca un amico per scambiarne una con una gemma! 💎',
+    start:{x:6,y:50},
+    stonesStart:3,
+    gemsNeeded:5,
+    gems:[{id:'g1',x:18,y:22},{id:'g2',x:82,y:78}],
+    rocks:[{x:45,y:35,r:5},{x:60,y:65,r:5}],
+    creatures:[{id:'c1',x:50,y:80,r:5,axis:'x',min:35,max:75,speed:0.28}],
+    npcs:[
+      {id:'n1',x:32,y:58,name:'Coniglietta Lulu',emoji:'🐰'},
+      {id:'n2',x:78,y:25,name:'Riccio Tobia',emoji:'🦔'},
+      {id:'n3',x:55,y:15,name:'Gufo Sereno',emoji:'🦉'}
+    ],
+    extraStones:[]
+  },
+  {
+    id:3, name:'Il Labirinto Incantato',
+    intro:'Trova la pietra nascosta se ti serve! Attenta alle creature, sono più veloci qui. 🌙',
+    start:{x:5,y:15},
+    stonesStart:3,
+    gemsNeeded:6,
+    gems:[{id:'g1',x:14,y:85},{id:'g2',x:92,y:12}],
+    rocks:[
+      {x:25,y:30,r:5},{x:25,y:50,r:5},{x:25,y:70,r:5},
+      {x:50,y:20,r:5},{x:50,y:80,r:5},
+      {x:75,y:30,r:5},{x:75,y:50,r:5},{x:75,y:70,r:5}
+    ],
+    creatures:[
+      {id:'c1',x:38,y:50,r:5,axis:'y',min:30,max:70,speed:0.4},
+      {id:'c2',x:62,y:50,r:5,axis:'y',min:30,max:70,speed:0.45}
+    ],
+    npcs:[
+      {id:'n1',x:37,y:12,name:'Volpe Argia',emoji:'🦊'},
+      {id:'n2',x:63,y:12,name:'Tasso Bruno',emoji:'🦡'},
+      {id:'n3',x:37,y:90,name:'Cerbiatta Fiamma',emoji:'🦌'},
+      {id:'n4',x:63,y:90,name:'Farfalla Iride',emoji:'🦋'}
+    ],
+    extraStones:[{id:'s1',x:50,y:50}]
+  }
+];
+
+let progress = { levelReached:1, stars:{} };
+let view = 'home';
+let game = null; // active runtime state for current level
+let loopHandle = null;
+let outsideHandled = false;
+
+const stageEl = document.getElementById('stage');
+const toastEl = document.getElementById('toastEl');
+
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>toastEl.classList.remove('show'), 1900);
+}
+
+async function loadProgress(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    if(res && res.value) return JSON.parse(res.value);
+  }catch(e){ /* nessun progresso salvato */ }
+  return { levelReached:1, stars:{} };
+}
+async function saveProgress(){
+  try{ await window.storage.set(STORAGE_KEY, JSON.stringify(progress), false); }
+  catch(e){ console.error('Salvataggio non riuscito', e); }
+}
+
+function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+
+// ---------- HOME ----------
+function renderHome(){
+  const chips = LEVELS.map(l=>{
+    const unlocked = l.id <= progress.levelReached;
+    const st = progress.stars[l.id] || 0;
+    return `<button class="level-chip ${unlocked?'':'locked'}" data-lvl="${l.id}" ${unlocked?'':'disabled'}>
+      ${l.name}<small>${unlocked ? '⭐'.repeat(st)+'☆'.repeat(3-st) : '🔒'}</small>
+    </button>`;
+  }).join('');
+
+  stageEl.innerHTML = `
+    <h1>💎 La Cerca delle Gemme Magiche</h1>
+    <p class="subtitle">Esplora il prato, raccogli le gemme, incontra nuovi amici!</p>
+    <div class="home-card">
+      <p>Muovi il tuo personaggio con le frecce della tastiera o con i pulsanti a schermo. Raccogli tutte le gemme di ogni quadro per proseguire nell'avventura!</p>
+      <div class="level-picker">${chips}</div>
+      <button class="big-btn" id="startBtn">Gioca! 🚀</button>
+    </div>
+  `;
+  document.querySelectorAll('.level-chip').forEach(el=>{
+    if(el.disabled) return;
+    el.onclick = ()=> startLevel(parseInt(el.dataset.lvl,10));
+  });
+  document.getElementById('startBtn').onclick = ()=> startLevel(progress.levelReached);
+}
+
+// ---------- LEVEL RUNTIME ----------
+function startLevel(levelId){
+  const def = LEVELS.find(l=>l.id===levelId);
+  game = {
+    def,
+    pos: { x:def.start.x, y:def.start.y },
+    keys: { up:false, down:false, left:false, right:false },
+    gemsCollected: 0,
+    collectedIds: new Set(),
+    stones: def.stonesStart,
+    tradedIds: new Set(),
+    stoneIds: new Set(),
+    bumps: 0
+  };
+  view = 'level';
+  renderLevel();
+  attachControls();
+  if(loopHandle) cancelAnimationFrame(loopHandle);
+  loopHandle = requestAnimationFrame(tick);
+  toast(def.intro);
+}
+
+function svgFor(kind, extra){
+  if(kind==='character'){
+    return `<svg viewBox="0 0 60 60"><ellipse cx="30" cy="52" rx="16" ry="5" fill="rgba(0,0,0,0.15)"/>
+      <circle cx="30" cy="28" r="20" fill="#FFCB77"/>
+      <circle cx="22" cy="24" r="3.2" fill="#4A3B32"/><circle cx="38" cy="24" r="3.2" fill="#4A3B32"/>
+      <path d="M22 34 Q30 40 38 34" stroke="#4A3B32" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      <path d="M12 20 Q6 8 18 6" stroke="#E8607A" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M48 20 Q54 8 42 6" stroke="#E8607A" stroke-width="5" fill="none" stroke-linecap="round"/>
+    </svg>`;
+  }
+  if(kind==='gem'){
+    return `<svg viewBox="0 0 40 40"><polygon points="20,4 34,16 27,36 13,36 6,16" fill="${extra||'#5EC8E0'}" stroke="#2E8FA8" stroke-width="2"/>
+      <polygon points="20,4 27,16 13,16" fill="#fff" opacity="0.35"/></svg>`;
+  }
+  if(kind==='rock'){
+    return `<svg viewBox="0 0 40 40"><ellipse cx="20" cy="24" rx="18" ry="14" fill="#9B9088"/><ellipse cx="14" cy="18" rx="6" ry="4" fill="#B4ABA3"/></svg>`;
+  }
+  if(kind==='stone'){
+    return `<svg viewBox="0 0 40 40"><ellipse cx="20" cy="22" rx="12" ry="9" fill="#B79E82"/><ellipse cx="16" cy="18" rx="4" ry="2.6" fill="#D3BFA3"/></svg>`;
+  }
+  return '';
+}
+
+function creatureSVG(){
+  return `<svg viewBox="0 0 40 40"><ellipse cx="20" cy="26" rx="14" ry="10" fill="#B98CD6"/>
+    <circle cx="14" cy="20" r="2.4" fill="#4A3B32"/><circle cx="26" cy="20" r="2.4" fill="#4A3B32"/>
+    <path d="M14 30 Q20 34 26 30" stroke="#4A3B32" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
+}
+
+function renderLevel(){
+  const def = game.def;
+  const stoneChips = '🪨'.repeat(game.stones);
+
+  stageEl.innerHTML = `
+    <div class="hud">
+      <button class="back-btn" id="backBtn">← Menu</button>
+      <div class="pill">${def.name}</div>
+      <div class="pill">💎 ${game.gemsCollected}/${def.gemsNeeded}</div>
+      ${def.stonesStart>0 || def.extraStones.length ? `<div class="pill" id="stonesPill">🪨 ${game.stones}</div>` : ''}
+    </div>
+    <div class="game-wrap" id="gameWrap"></div>
+    <div class="controls">
+      <div class="dpad">
+        <button class="up" data-dir="up">⬆️</button>
+        <button class="left" data-dir="left">⬅️</button>
+        <button class="right" data-dir="right">➡️</button>
+        <button class="down" data-dir="down">⬇️</button>
+      </div>
+      <div class="hint">Frecce/WASD sulla tastiera, oppure i pulsanti qui a fianco</div>
+    </div>
+  `;
+  document.getElementById('backBtn').onclick = ()=>{ stopLevel(); view='home'; renderHome(); };
+
+  const wrap = document.getElementById('gameWrap');
+
+  def.rocks.forEach(r=>{
+    const el = document.createElement('div');
+    el.className='entity'; el.style.left=r.x+'%'; el.style.top=r.y+'%';
+    el.style.width='11%'; el.style.height='11%';
+    el.innerHTML = svgFor('rock');
+    wrap.appendChild(el);
+  });
+
+  def.gems.forEach(g=>{
+    if(game.collectedIds.has(g.id)) return;
+    const el = document.createElement('div');
+    el.className='entity gem-sparkle'; el.id='gem-'+g.id;
+    el.style.left=g.x+'%'; el.style.top=g.y+'%'; el.style.width='8%'; el.style.height='8%';
+    el.innerHTML = svgFor('gem');
+    wrap.appendChild(el);
+  });
+
+  def.extraStones.forEach(s=>{
+    if(game.stoneIds.has(s.id)) return;
+    const el = document.createElement('div');
+    el.className='entity gem-sparkle'; el.id='stone-'+s.id;
+    el.style.left=s.x+'%'; el.style.top=s.y+'%'; el.style.width='7%'; el.style.height='7%';
+    el.innerHTML = svgFor('stone');
+    wrap.appendChild(el);
+  });
+
+  def.npcs.forEach(n=>{
+    const el = document.createElement('div');
+    el.className='entity npc' + (game.tradedIds.has(n.id)?' traded':''); el.id='npc-'+n.id;
+    el.style.left=n.x+'%'; el.style.top=n.y+'%'; el.style.width='9%'; el.style.height='9%';
+    el.style.fontSize='26px'; el.style.display='flex'; el.style.alignItems='center'; el.style.justifyContent='center';
+    el.textContent = n.emoji;
+    el.title = n.name;
+    el.addEventListener('click', ()=>tryTrade(n));
+    wrap.appendChild(el);
+
+    if(!game.tradedIds.has(n.id)){
+      const prompt = document.createElement('button');
+      prompt.className = 'trade-prompt';
+      prompt.id = 'prompt-'+n.id;
+      prompt.style.left = n.x+'%';
+      prompt.style.top = n.y+'%';
+      prompt.textContent = '🔁 Scambia';
+      prompt.style.display = 'none';
+      prompt.addEventListener('click', (e)=>{ e.stopPropagation(); tryTrade(n); });
+      wrap.appendChild(prompt);
+    }
+  });
+
+  def.creatures.forEach(c=>{
+    const el = document.createElement('div');
+    el.className='entity creature'; el.id='creature-'+c.id;
+    el.style.left=c.x+'%'; el.style.top=c.y+'%'; el.style.width='9%'; el.style.height='9%';
+    el.innerHTML = creatureSVG();
+    wrap.appendChild(el);
+  });
+
+  const charEl = document.createElement('div');
+  charEl.className='entity character'; charEl.id='character';
+  charEl.style.left=game.pos.x+'%'; charEl.style.top=game.pos.y+'%'; charEl.style.width='10%'; charEl.style.height='10%';
+  charEl.innerHTML = svgFor('character');
+  wrap.appendChild(charEl);
+}
+
+function tryTrade(npc){
+  if(!game || view!=='level') return;
+  const npcEl = document.getElementById('npc-'+npc.id);
+  const npcPos = {x:npc.x, y:npc.y};
+  if(dist(game.pos, npcPos) > 12){
+    toast(`Avvicinati a ${npc.name} per scambiare! 🚶`);
+    return;
+  }
+  if(game.tradedIds.has(npc.id)){
+    toast(`${npc.name} ti ha già dato la sua gemma!`);
+    return;
+  }
+  if(game.stones<=0){
+    toast('Non hai più pietre da scambiare! 🪨');
+    return;
+  }
+  game.stones--;
+  game.tradedIds.add(npc.id);
+  game.gemsCollected++;
+  toast(`${npc.name}: grazie per la pietra! Ecco una gemma 💎`);
+  refreshHud();
+  npcEl.classList.add('traded');
+  const prompt = document.getElementById('prompt-'+npc.id);
+  if(prompt) prompt.remove();
+  checkWin();
+}
+
+function refreshHud(){
+  const gemPill = document.querySelectorAll('.hud .pill')[1];
+  if(gemPill) gemPill.textContent = `💎 ${game.gemsCollected}/${game.def.gemsNeeded}`;
+  const stonesPill = document.getElementById('stonesPill');
+  if(stonesPill) stonesPill.textContent = `🪨 ${game.stones}`;
+}
+
+// ---------- Controls ----------
+function attachControls(){
+  document.onkeydown = (e)=>{
+    const map = {ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right', w:'up',s:'down',a:'left',d:'right'};
+    const dir = map[e.key];
+    if(dir){ game.keys[dir]=true; e.preventDefault(); }
+  };
+  document.onkeyup = (e)=>{
+    const map = {ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right', w:'up',s:'down',a:'left',d:'right'};
+    const dir = map[e.key];
+    if(dir){ game.keys[dir]=false; }
+  };
+  document.querySelectorAll('.dpad button').forEach(btn=>{
+    const dir = btn.dataset.dir;
+    const set = (v)=> (e)=>{ if(game) game.keys[dir]=v; e.preventDefault(); };
+    btn.addEventListener('pointerdown', set(true));
+    btn.addEventListener('pointerup', set(false));
+    btn.addEventListener('pointerleave', set(false));
+    btn.addEventListener('pointercancel', set(false));
+  });
+}
+function detachControls(){
+  document.onkeydown = null;
+  document.onkeyup = null;
+}
+
+function stopLevel(){
+  if(loopHandle) cancelAnimationFrame(loopHandle);
+  loopHandle = null;
+  detachControls();
+  game = null;
+}
+
+// ---------- Game loop ----------
+function tick(){
+  if(!game || view!=='level'){ return; }
+  const k = game.keys;
+  let dx=0, dy=0;
+  if(k.up) dy -= 1;
+  if(k.down) dy += 1;
+  if(k.left) dx -= 1;
+  if(k.right) dx += 1;
+  if(dx!==0 && dy!==0){ dx*=0.7071; dy*=0.7071; }
+
+  let nx = game.pos.x + dx*MOVE_SPEED;
+  let ny = game.pos.y + dy*MOVE_SPEED;
+  nx = Math.max(3, Math.min(97, nx));
+  ny = Math.max(6, Math.min(94, ny));
+
+  const def = game.def;
+  let blocked = false;
+  def.rocks.forEach(r=>{
+    if(dist({x:nx,y:ny}, r) < (CHAR_R*0.7 + r.r*0.7)) blocked = true;
+  });
+  if(!blocked){
+    game.pos.x = nx; game.pos.y = ny;
+  }
+
+  const charEl = document.getElementById('character');
+  if(charEl){ charEl.style.left = game.pos.x+'%'; charEl.style.top = game.pos.y+'%'; }
+
+  // show/hide trade prompts based on proximity
+  def.npcs.forEach(n=>{
+    if(game.tradedIds.has(n.id)) return;
+    const prompt = document.getElementById('prompt-'+n.id);
+    if(!prompt) return;
+    prompt.style.display = dist(game.pos, n) < 12 ? 'block' : 'none';
+  });
+
+  // move creatures
+  def.creatures.forEach(c=>{
+    if(c.axis==='x'){
+      c.x += (c.dir||1) * c.speed;
+      if(c.x > c.max){ c.x = c.max; c.dir=-1; }
+      if(c.x < c.min){ c.x = c.min; c.dir=1; }
+    } else {
+      c.y += (c.dir||1) * c.speed;
+      if(c.y > c.max){ c.y = c.max; c.dir=-1; }
+      if(c.y < c.min){ c.y = c.min; c.dir=1; }
+    }
+    const el = document.getElementById('creature-'+c.id);
+    if(el){ el.style.left=c.x+'%'; el.style.top=c.y+'%'; }
+    if(dist(game.pos, c) < (CHAR_R*0.7 + c.r*0.7)){
+      handleBonk();
+    }
+  });
+
+  // check gem pickup
+  def.gems.forEach(g=>{
+    if(game.collectedIds.has(g.id)) return;
+    if(dist(game.pos, g) < (CHAR_R*0.8 + 3)){
+      game.collectedIds.add(g.id);
+      game.gemsCollected++;
+      const el = document.getElementById('gem-'+g.id);
+      if(el) el.remove();
+      refreshHud();
+      toast('Gemma raccolta! 💎');
+      checkWin();
+    }
+  });
+
+  // check stone pickup
+  def.extraStones.forEach(s=>{
+    if(game.stoneIds.has(s.id)) return;
+    if(dist(game.pos, s) < (CHAR_R*0.8 + 3)){
+      game.stoneIds.add(s.id);
+      game.stones++;
+      const el = document.getElementById('stone-'+s.id);
+      if(el) el.remove();
+      refreshHud();
+      toast('Hai trovato una pietra! 🪨');
+    }
+  });
+
+  loopHandle = requestAnimationFrame(tick);
+}
+
+function handleBonk(){
+  if(game._bonkCooldown) return;
+  game._bonkCooldown = true;
+  game.bumps++;
+  game.pos.x = game.def.start.x;
+  game.pos.y = game.def.start.y;
+  const charEl = document.getElementById('character');
+  if(charEl){
+    charEl.style.left = game.pos.x+'%'; charEl.style.top = game.pos.y+'%';
+    charEl.classList.add('bump');
+    setTimeout(()=>charEl.classList.remove('bump'), 400);
+  }
+  toast('Ops! Torni al punto di partenza, ma le tue gemme restano tue! 💪');
+  setTimeout(()=>{ game._bonkCooldown = false; }, 900);
+}
+
+function checkWin(){
+  if(game.gemsCollected >= game.def.gemsNeeded){
+    finishLevel();
+  }
+}
+
+async function finishLevel(){
+  stopLevel_keepState();
+  const stars = game.bumps===0 ? 3 : game.bumps<=2 ? 2 : 1;
+  const lvlId = game.def.id;
+  if(!progress.stars[lvlId] || stars > progress.stars[lvlId]){
+    progress.stars[lvlId] = stars;
+  }
+  if(lvlId >= progress.levelReached && lvlId < LEVELS.length){
+    progress.levelReached = lvlId + 1;
+  } else if(lvlId===LEVELS.length){
+    progress.levelReached = Math.max(progress.levelReached, LEVELS.length);
+  }
+  await saveProgress();
+  showLevelComplete(stars, lvlId);
+}
+
+function stopLevel_keepState(){
+  if(loopHandle) cancelAnimationFrame(loopHandle);
+  loopHandle = null;
+  detachControls();
+}
+
+function showLevelComplete(stars, lvlId){
+  const isLast = lvlId === LEVELS.length;
+  const overlay = document.createElement('div');
+  overlay.className='overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h2>${isLast ? '🏆 Avventura completata!' : '🎉 Quadro completato!'}</h2>
+      <div class="stars">${'⭐'.repeat(stars)}${'☆'.repeat(3-stars)}</div>
+      <p>${isLast ? 'Hai raccolto tutte le gemme di ogni quadro. Bravissima esploratrice!' : 'Ottimo lavoro! Pronta per il prossimo quadro?'}</p>
+      <button class="big-btn" id="nextLevelBtn">${isLast ? 'Torna al menu 🏠' : 'Prossimo quadro ➡️'}</button>
+      <button class="big-btn secondary" id="retryLevelBtn">🔁 Rigioca questo quadro</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  document.getElementById('nextLevelBtn').onclick = ()=>{
+    overlay.remove();
+    game = null;
+    if(isLast){ view='home'; renderHome(); }
+    else { startLevel(lvlId+1); }
+  };
+  document.getElementById('retryLevelBtn').onclick = ()=>{
+    overlay.remove();
+    startLevel(lvlId);
+  };
+}
+
+// ---------- Init ----------
+(async function init(){
+  progress = await loadProgress();
+  renderHome();
+})();
+
+})();
+</script>
+</body>
+</html>
