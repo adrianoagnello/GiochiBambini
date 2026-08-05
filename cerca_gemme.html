@@ -70,7 +70,7 @@
   }
 
   .game-wrap{ position:relative; width:100%; aspect-ratio:3/2; border-radius:20px; overflow:hidden;
-    background:linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 35%, var(--grass) 35%, var(--grass-dark) 100%);
+    background:linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 35%, #9ED67A 35%, var(--grass) 55%, #7FBE5C 78%, var(--grass-dark) 100%);
     box-shadow:var(--shadow); touch-action:none;
   }
   .entity{ position:absolute; transform:translate(-50%,-50%); pointer-events:none; }
@@ -134,41 +134,52 @@ const STORAGE_KEY = 'gem-quest-progress';
 const MOVE_SPEED = 0.9;
 const CHAR_R = 4.2;
 
+const FRUIT_EMOJIS = ['🍓','🍎','🍇','🍊'];
+
 const LEVELS = [
   {
     id:1, name:'Il Prato Fiorito',
-    intro:'Usa le frecce (o i pulsanti) per muoverti e raccogli tutte le gemme! ✨',
-    start:{x:8,y:50},
-    stonesStart:0,
+    intro:'Raccogli gemme 💎 e frutti 🍓! I frutti ti serviranno nei prossimi quadri per fare scambi con gli animali.',
+    start:{x:8,y:55},
     gemsNeeded:4,
-    gems:[{id:'g1',x:30,y:20},{id:'g2',x:50,y:75},{id:'g3',x:72,y:30},{id:'g4',x:88,y:60}],
-    rocks:[{x:48,y:50,r:6}],
-    creatures:[],
+    gemColor:'#5EC8E0',
+    gems:[{id:'g1',x:30,y:22},{id:'g2',x:50,y:78},{id:'g3',x:74,y:30},{id:'g4',x:88,y:62}],
+    rocks:[{x:48,y:52,r:6}],
+    creatures:[{id:'c1',x:74,y:50,r:5,axis:'y',min:40,max:62,speed:0.22}],
     npcs:[],
-    extraStones:[]
+    fruits:[{id:'f1',x:18,y:35},{id:'f2',x:40,y:60},{id:'f3',x:65,y:70},{id:'f4',x:80,y:20},{id:'f5',x:55,y:42},{id:'f6',x:25,y:75}],
+    decor:{
+      trees:[{x:4,y:47,s:1.1},{x:96,y:44,s:1.2},{x:12,y:88,s:0.9},{x:92,y:85,s:1.0}],
+      rainbow:{x:78,y:6,w:38},
+      tufts:[{x:22,y:40},{x:58,y:46},{x:38,y:82},{x:70,y:56},{x:15,y:65},{x:85,y:47}]
+    }
   },
   {
     id:2, name:'Il Ruscello degli Amici',
-    intro:'Hai 3 pietre 🪨 in tasca: tocca un amico per scambiarne una con una gemma! 💎',
+    intro:'Offri un frutto 🍓 agli amici per ricevere una gemma 💎 in cambio!',
     start:{x:6,y:50},
-    stonesStart:3,
     gemsNeeded:5,
+    gemColor:'#E8607A',
     gems:[{id:'g1',x:18,y:22},{id:'g2',x:82,y:78}],
     rocks:[{x:45,y:35,r:5},{x:60,y:65,r:5}],
     creatures:[{id:'c1',x:50,y:80,r:5,axis:'x',min:35,max:75,speed:0.28}],
     npcs:[
       {id:'n1',x:32,y:58,name:'Coniglietta Lulu',emoji:'🐰'},
-      {id:'n2',x:78,y:25,name:'Riccio Tobia',emoji:'🦔'},
+      {id:'n2',x:80,y:60,name:'Riccio Tobia',emoji:'🦔'},
       {id:'n3',x:55,y:15,name:'Gufo Sereno',emoji:'🦉'}
     ],
-    extraStones:[]
+    fruits:[{id:'f1',x:65,y:50}],
+    decor:{
+      trees:[{x:3,y:47,s:0.9},{x:97,y:90,s:1.1}],
+      tufts:[{x:25,y:75},{x:70,y:40},{x:15,y:45}]
+    }
   },
   {
     id:3, name:'Il Labirinto Incantato',
-    intro:'Trova la pietra nascosta se ti serve! Attenta alle creature, sono più veloci qui. 🌙',
+    intro:'Trova il frutto nascosto se ti serve! Attenta alle creature, sono più veloci qui. 🌙',
     start:{x:5,y:15},
-    stonesStart:3,
     gemsNeeded:6,
+    gemColor:'#F4B942',
     gems:[{id:'g1',x:14,y:85},{id:'g2',x:92,y:12}],
     rocks:[
       {x:25,y:30,r:5},{x:25,y:50,r:5},{x:25,y:70,r:5},
@@ -180,18 +191,22 @@ const LEVELS = [
       {id:'c2',x:62,y:50,r:5,axis:'y',min:30,max:70,speed:0.45}
     ],
     npcs:[
-      {id:'n1',x:37,y:12,name:'Volpe Argia',emoji:'🦊'},
-      {id:'n2',x:63,y:12,name:'Tasso Bruno',emoji:'🦡'},
+      {id:'n1',x:37,y:40,name:'Volpe Argia',emoji:'🦊'},
+      {id:'n2',x:63,y:40,name:'Tasso Bruno',emoji:'🦡'},
       {id:'n3',x:37,y:90,name:'Cerbiatta Fiamma',emoji:'🦌'},
       {id:'n4',x:63,y:90,name:'Farfalla Iride',emoji:'🦋'}
     ],
-    extraStones:[{id:'s1',x:50,y:50}]
+    fruits:[{id:'f1',x:50,y:50}],
+    decor:{
+      trees:[{x:5,y:48,s:0.9},{x:95,y:90,s:0.9}]
+    }
   }
 ];
 
 let progress = { levelReached:1, stars:{} };
 let view = 'home';
 let game = null; // active runtime state for current level
+let sessionFruit = 0; // valuta di scambio: raccolta nel liv.1, spesa nei liv.2/3, persiste tra i quadri della sessione
 let loopHandle = null;
 let outsideHandled = false;
 
@@ -254,9 +269,8 @@ function startLevel(levelId){
     keys: { up:false, down:false, left:false, right:false },
     gemsCollected: 0,
     collectedIds: new Set(),
-    stones: def.stonesStart,
     tradedIds: new Set(),
-    stoneIds: new Set(),
+    fruitIds: new Set(),
     bumps: 0
   };
   view = 'level';
@@ -284,10 +298,34 @@ function svgFor(kind, extra){
   if(kind==='rock'){
     return `<svg viewBox="0 0 40 40"><ellipse cx="20" cy="24" rx="18" ry="14" fill="#9B9088"/><ellipse cx="14" cy="18" rx="6" ry="4" fill="#B4ABA3"/></svg>`;
   }
-  if(kind==='stone'){
-    return `<svg viewBox="0 0 40 40"><ellipse cx="20" cy="22" rx="12" ry="9" fill="#B79E82"/><ellipse cx="16" cy="18" rx="4" ry="2.6" fill="#D3BFA3"/></svg>`;
-  }
   return '';
+}
+
+function treeSVG(){
+  return `<svg viewBox="0 0 60 90"><ellipse cx="30" cy="84" rx="14" ry="4" fill="rgba(0,0,0,0.12)"/>
+    <rect x="25" y="48" width="10" height="34" rx="4" fill="#8B5E3C"/>
+    <circle cx="30" cy="32" r="24" fill="#5FAE5A"/>
+    <circle cx="14" cy="42" r="16" fill="#4E9A46"/>
+    <circle cx="46" cy="42" r="16" fill="#4E9A46"/>
+    <circle cx="22" cy="24" r="6" fill="#74C168" opacity="0.6"/>
+  </svg>`;
+}
+
+function rainbowSVG(){
+  return `<svg viewBox="0 0 300 160" preserveAspectRatio="xMidYMax meet">
+    <path d="M10,155 A140,140 0 0,1 290,155" stroke="#FF7A7A" stroke-width="13" fill="none" opacity="0.85"/>
+    <path d="M27,155 A123,123 0 0,1 273,155" stroke="#FFC15E" stroke-width="13" fill="none" opacity="0.85"/>
+    <path d="M44,155 A106,106 0 0,1 256,155" stroke="#FFE066" stroke-width="13" fill="none" opacity="0.85"/>
+    <path d="M61,155 A89,89 0 0,1 239,155" stroke="#8FD97A" stroke-width="13" fill="none" opacity="0.85"/>
+    <path d="M78,155 A72,72 0 0,1 222,155" stroke="#6FC3E0" stroke-width="13" fill="none" opacity="0.85"/>
+    <path d="M95,155 A55,55 0 0,1 205,155" stroke="#B98CD6" stroke-width="13" fill="none" opacity="0.85"/>
+  </svg>`;
+}
+
+function tuftSVG(){
+  return `<svg viewBox="0 0 40 24"><path d="M6 24 Q8 10 4 0" stroke="#5FAE5A" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M20 24 Q22 6 20 0" stroke="#4E9A46" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M34 24 Q36 12 32 2" stroke="#5FAE5A" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`;
 }
 
 function creatureSVG(){
@@ -296,16 +334,45 @@ function creatureSVG(){
     <path d="M14 30 Q20 34 26 30" stroke="#4A3B32" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
 }
 
+function renderDecor(wrap, decor){
+  if(!decor) return;
+  (decor.trees||[]).forEach(t=>{
+    const el = document.createElement('div');
+    el.className='entity';
+    el.style.left=t.x+'%'; el.style.top=t.y+'%';
+    const size = 16*(t.s||1);
+    el.style.width=size+'%'; el.style.height=(size*1.4)+'%';
+    el.innerHTML = treeSVG();
+    wrap.appendChild(el);
+  });
+  if(decor.rainbow){
+    const r = decor.rainbow;
+    const el = document.createElement('div');
+    el.className='entity'; el.style.opacity='0.9';
+    el.style.left=r.x+'%'; el.style.top=r.y+'%';
+    el.style.width=r.w+'%'; el.style.height=(r.w*0.55)+'%';
+    el.innerHTML = rainbowSVG();
+    wrap.appendChild(el);
+  }
+  (decor.tufts||[]).forEach(t=>{
+    const el = document.createElement('div');
+    el.className='entity';
+    el.style.left=t.x+'%'; el.style.top=t.y+'%';
+    el.style.width='6%'; el.style.height='4%';
+    el.innerHTML = tuftSVG();
+    wrap.appendChild(el);
+  });
+}
+
 function renderLevel(){
   const def = game.def;
-  const stoneChips = '🪨'.repeat(game.stones);
 
   stageEl.innerHTML = `
     <div class="hud">
       <button class="back-btn" id="backBtn">← Menu</button>
       <div class="pill">${def.name}</div>
       <div class="pill">💎 ${game.gemsCollected}/${def.gemsNeeded}</div>
-      ${def.stonesStart>0 || def.extraStones.length ? `<div class="pill" id="stonesPill">🪨 ${game.stones}</div>` : ''}
+      <div class="pill" id="fruitPill">🍓 ${sessionFruit}</div>
     </div>
     <div class="game-wrap" id="gameWrap"></div>
     <div class="controls">
@@ -322,6 +389,8 @@ function renderLevel(){
 
   const wrap = document.getElementById('gameWrap');
 
+  renderDecor(wrap, def.decor);
+
   def.rocks.forEach(r=>{
     const el = document.createElement('div');
     el.className='entity'; el.style.left=r.x+'%'; el.style.top=r.y+'%';
@@ -335,16 +404,17 @@ function renderLevel(){
     const el = document.createElement('div');
     el.className='entity gem-sparkle'; el.id='gem-'+g.id;
     el.style.left=g.x+'%'; el.style.top=g.y+'%'; el.style.width='8%'; el.style.height='8%';
-    el.innerHTML = svgFor('gem');
+    el.innerHTML = svgFor('gem', def.gemColor);
     wrap.appendChild(el);
   });
 
-  def.extraStones.forEach(s=>{
-    if(game.stoneIds.has(s.id)) return;
+  (def.fruits||[]).forEach((f,i)=>{
+    if(game.fruitIds.has(f.id)) return;
     const el = document.createElement('div');
-    el.className='entity gem-sparkle'; el.id='stone-'+s.id;
-    el.style.left=s.x+'%'; el.style.top=s.y+'%'; el.style.width='7%'; el.style.height='7%';
-    el.innerHTML = svgFor('stone');
+    el.className='entity gem-sparkle'; el.id='fruit-'+f.id;
+    el.style.left=f.x+'%'; el.style.top=f.y+'%'; el.style.width='7%'; el.style.height='7%';
+    el.style.fontSize='22px'; el.style.display='flex'; el.style.alignItems='center'; el.style.justifyContent='center';
+    el.textContent = FRUIT_EMOJIS[i % FRUIT_EMOJIS.length];
     wrap.appendChild(el);
   });
 
@@ -398,14 +468,14 @@ function tryTrade(npc){
     toast(`${npc.name} ti ha già dato la sua gemma!`);
     return;
   }
-  if(game.stones<=0){
-    toast('Non hai più pietre da scambiare! 🪨');
+  if(sessionFruit<=0){
+    toast('Non hai più frutti da offrire! 🍓 Torna al livello 1 per raccoglierne altri.');
     return;
   }
-  game.stones--;
+  sessionFruit--;
   game.tradedIds.add(npc.id);
   game.gemsCollected++;
-  toast(`${npc.name}: grazie per la pietra! Ecco una gemma 💎`);
+  toast(`${npc.name}: grazie per il frutto! Ecco una gemma 💎`);
   refreshHud();
   npcEl.classList.add('traded');
   const prompt = document.getElementById('prompt-'+npc.id);
@@ -416,8 +486,8 @@ function tryTrade(npc){
 function refreshHud(){
   const gemPill = document.querySelectorAll('.hud .pill')[1];
   if(gemPill) gemPill.textContent = `💎 ${game.gemsCollected}/${game.def.gemsNeeded}`;
-  const stonesPill = document.getElementById('stonesPill');
-  if(stonesPill) stonesPill.textContent = `🪨 ${game.stones}`;
+  const fruitPill = document.getElementById('fruitPill');
+  if(fruitPill) fruitPill.textContent = `🍓 ${sessionFruit}`;
 }
 
 // ---------- Controls ----------
@@ -521,16 +591,16 @@ function tick(){
     }
   });
 
-  // check stone pickup
-  def.extraStones.forEach(s=>{
-    if(game.stoneIds.has(s.id)) return;
-    if(dist(game.pos, s) < (CHAR_R*0.8 + 3)){
-      game.stoneIds.add(s.id);
-      game.stones++;
-      const el = document.getElementById('stone-'+s.id);
+  // check fruit pickup
+  (def.fruits||[]).forEach(f=>{
+    if(game.fruitIds.has(f.id)) return;
+    if(dist(game.pos, f) < (CHAR_R*0.8 + 3)){
+      game.fruitIds.add(f.id);
+      sessionFruit++;
+      const el = document.getElementById('fruit-'+f.id);
       if(el) el.remove();
       refreshHud();
-      toast('Hai trovato una pietra! 🪨');
+      toast('Frutto raccolto! 🍓 Potrai scambiarlo con gli amici più avanti.');
     }
   });
 
@@ -612,6 +682,11 @@ function showLevelComplete(stars, lvlId){
   progress = await loadProgress();
   renderHome();
 })();
+
+})();
+</script>
+</body>
+</html>
 
 })();
 </script>
