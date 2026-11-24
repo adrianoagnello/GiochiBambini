@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dama Italiana</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  font-family:"Trebuchet MS","Segoe UI",system-ui,-apple-system,sans-serif;
+  color:#3b2a4a;
+  background:linear-gradient(160deg,#fff3d6 0%,#ffe0ef 55%,#e3f0ff 100%);
+  min-height:100vh;
+  -webkit-tap-highlight-color:transparent;
+}
+main{max-width:640px;margin:0 auto;padding:12px 12px 28px}
+.hidden{display:none!important}
+.back{display:inline-block;margin:4px 0 10px;color:#6b4fa0;text-decoration:none;font-weight:700}
+.back:hover{text-decoration:underline}
+
+/* ---------- Menu ---------- */
+.card{background:#fff;border-radius:22px;padding:20px;box-shadow:0 8px 24px rgba(90,60,120,.15)}
+h1{margin:0 0 4px;font-size:clamp(1.7rem,6vw,2.3rem);text-align:center}
+.sub{text-align:center;margin:0 0 14px;color:#7a6890}
+.modebtn{
+  display:block;width:100%;text-align:left;border:0;border-radius:16px;
+  padding:14px 16px;margin:10px 0;font:inherit;font-size:1.1rem;font-weight:700;
+  color:#fff;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.18);
+}
+.modebtn small{display:block;font-weight:400;font-size:.88rem;margin-top:2px}
+.modebtn:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.18)}
+.m1{background:#2f9e6e}
+.m2{background:#d9751a}
+.m3{background:#6c63e8}
+details{margin-top:14px;background:#f7f2ff;border-radius:14px;padding:10px 14px}
+summary{cursor:pointer;font-weight:700}
+details ul{padding-left:20px;margin:8px 0 4px}
+details li{margin:7px 0;line-height:1.4}
+
+/* ---------- Gioco ---------- */
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.score{display:flex;align-items:center;gap:6px;background:#fff;border-radius:999px;padding:6px 12px;font-weight:700;box-shadow:0 2px 8px rgba(90,60,120,.12)}
+.dot{width:16px;height:16px;border-radius:50%;display:inline-block;border:2px solid #b9a9d6}
+.dot.w{background:#fff}
+.dot.b{background:#2a2038;border-color:#2a2038}
+#turn{flex:1;text-align:center;font-weight:700;font-size:.95rem}
+#modeLabel{text-align:center;font-size:.85rem;color:#7a6890;margin:0 0 6px}
+#status{
+  min-height:3.4em;display:flex;align-items:center;justify-content:center;text-align:center;
+  border-radius:14px;padding:8px 12px;margin:0 0 10px;background:#fff;font-weight:600;line-height:1.3;
+  box-shadow:0 2px 8px rgba(90,60,120,.1);
+}
+#status.warn{background:#fff0c9;box-shadow:inset 0 0 0 2px #f5b301}
+#status.info{background:#e6f6ff}
+
+#board{
+  display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));
+  width:min(94vw,560px);
+  width:min(94vw,560px,calc(100dvh - 300px));
+  min-width:280px;aspect-ratio:1/1;margin:0 auto;
+  border:6px solid #5a3d7a;border-radius:12px;overflow:hidden;
+  box-shadow:0 10px 24px rgba(60,30,90,.3);user-select:none;-webkit-user-select:none;
+}
+.sq{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;min-height:0}
+.sq.light{background:#ffe9c7}
+.sq.dark{background:#2e8b7a;cursor:pointer}
+.sq.sel{box-shadow:inset 0 0 0 4px #ffd21f}
+.sq.last{box-shadow:inset 0 0 0 3px rgba(255,255,255,.55)}
+.sq.dest::after{
+  content:"";position:absolute;width:30%;height:30%;border-radius:50%;
+  background:rgba(255,210,31,.95);box-shadow:0 0 0 3px rgba(255,255,255,.6);
+}
+.sq.dest.cap::after{background:rgba(255,120,40,.95)}
+.sq:focus-visible{outline:3px solid #ffd21f;outline-offset:-3px}
+
+.piece{
+  width:78%;height:78%;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  position:relative;z-index:1;
+  box-shadow:0 3px 0 rgba(0,0,0,.35),inset 0 -4px 6px rgba(0,0,0,.15);
+  transition:transform .15s,opacity .2s;
+}
+.piece::before{content:"";position:absolute;inset:14%;border-radius:50%;border:2px solid rgba(0,0,0,.18)}
+.piece.w{background:radial-gradient(circle at 35% 30%,#ffffff,#e9e1f5 70%)}
+.piece.b{background:radial-gradient(circle at 35% 30%,#6d5a8a,#241a33 75%)}
+.crown{width:58%;height:58%;display:block;position:relative;z-index:1;flex:none}
+.piece.w .crown{color:#d99a00}
+.piece.b .crown{color:#ffd24a}
+.piece.taken{opacity:.3;transform:scale(.8)}
+.piece.must{
+  animation:pulse 1s ease-in-out infinite;
+  box-shadow:0 0 0 4px #ffb020,0 0 18px 6px rgba(255,176,32,.9);
+}
+@keyframes pulse{50%{transform:scale(1.1)}}
+@media (prefers-reduced-motion:reduce){.piece.must{animation:none}}
+
+.controls{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}
+.btn{
+  border:0;border-radius:999px;padding:10px 16px;font:inherit;font-weight:700;
+  background:#fff;color:#5a3d7a;box-shadow:0 3px 0 rgba(90,60,120,.25);cursor:pointer;
+}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(90,60,120,.25)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.main{background:#6c63e8;color:#fff}
+
+#overlay{
+  position:fixed;inset:0;background:rgba(40,25,60,.55);display:flex;
+  align-items:center;justify-content:center;padding:16px;z-index:10;
+}
+.dialog{background:#fff;border-radius:24px;padding:24px 20px;max-width:360px;width:100%;text-align:center}
+.dialog .big{font-size:3.2rem;margin-bottom:4px}
+.dialog h2{margin:0 0 6px}
+.dialog p{margin:0 0 14px;color:#6a5a7e}
+.dialog .controls{margin-top:6px}
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="index.html">← Torna alla Bottega dei Giochi</a>
+
+  <!-- MENU -->
+  <section id="menu" class="card">
+    <h1>👑 Dama Italiana</h1>
+    <p class="sub">Scegli come vuoi giocare!</p>
+    <button class="modebtn m1" id="bEasy" type="button">🐣 Contro il computer: Facile
+      <small>Il computer muove un po' a caso. Perfetto per cominciare!</small></button>
+    <button class="modebtn m2" id="bSmart" type="button">🦊 Contro il computer: Attento
+      <small>Il computer ragiona prima di muovere. Sfida più difficile!</small></button>
+    <button class="modebtn m3" id="bTwo" type="button">👫 Due giocatori
+      <small>Sullo stesso schermo, un turno a testa.</small></button>
+
+    <details>
+      <summary>📖 Come si gioca</summary>
+      <ul>
+        <li>Si gioca sulle caselle scure. Le <b>Bianche</b> muovono per prime. Contro il computer, tu giochi con le Bianche.</li>
+        <li>Le pedine si muovono in <b>diagonale, in avanti</b>, di una casella.</li>
+        <li>Per <b>mangiare</b> salti una pedina avversaria che ti sta davanti in diagonale, se subito dietro c'è una casella libera. Le pedine semplici mangiano solo in avanti.</li>
+        <li><b>Mangiare è obbligatorio!</b> Se puoi mangiare devi farlo, e se con la stessa pedina puoi mangiare ancora, devi continuare.</li>
+        <li>Una pedina semplice <b>non può mangiare una dama</b>.</li>
+        <li><b>Regola della maggioranza:</b> se hai più modi di mangiare, devi scegliere quello che mangia più pezzi. A parità, quello fatto con una dama; poi quello che mangia più dame; poi quello che incontra per prima una dama. In questi casi le pedine che devono muovere si illuminano!</li>
+        <li>Quando una pedina arriva all'ultima fila diventa <b>dama</b> 👑: si muove e mangia in avanti e all'indietro, ma di una casella alla volta. Se diventa dama mentre mangia, la sua mossa finisce lì.</li>
+        <li>Vince chi mangia tutte le pedine dell'avversario o le blocca in modo che non possa più muovere.</li>
+        <li>È patta (pareggio) se per 40 mosse di fila (20 a testa) nessuno mangia e nessuna pedina semplice si muove.</li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- GIOCO -->
+  <section id="game" class="hidden">
+    <p id="modeLabel"></p>
+    <div class="top">
+      <div class="score" title="Pedine bianche rimaste"><span class="dot w"></span><span id="cntW">12</span></div>
+      <div id="turn"></div>
+      <div class="score" title="Pedine nere rimaste"><span class="dot b"></span><span id="cntB">12</span></div>
+    </div>
+    <div id="status" role="status" aria-live="polite"></div>
+    <div id="board" role="grid" aria-label="Scacchiera della dama"></div>
+    <div class="controls">
+      <button class="btn" id="bUndo" type="button">↩️ Annulla mossa</button>
+      <button class="btn" id="bFlip" type="button">🔄 Gira la scacchiera</button>
+      <button class="btn" id="bNew" type="button">🔁 Nuova partita</button>
+      <button class="btn" id="bMenu" type="button">🏠 Menu</button>
+    </div>
+  </section>
+</main>
+
+<div id="overlay" class="hidden">
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="ovTitle">
+    <div class="big" id="ovEmoji">🎉</div>
+    <h2 id="ovTitle"></h2>
+    <p id="ovText"></p>
+    <div class="controls">
+      <button class="btn main" id="ovAgain" type="button">🔁 Gioca ancora</button>
+      <button class="btn" id="ovMenu" type="button">🏠 Menu</button>
+      <button class="btn" id="ovClose" type="button">👀 Guarda la scacchiera</button>
+    </div>
+  </div>
+</div>
+
+<noscript>Questo gioco ha bisogno di JavaScript per funzionare.</noscript>
+
+<script>
+(function () {
+'use strict';
+
+// ==== ENGINE START ====
+// Scacchiera 8x8. Valori: 0 vuota, 1 pedina bianca, 2 dama bianca, -1 pedina nera, -2 dama nera.
+// Le caselle scure sono quelle con (riga + colonna) dispari: la casella scura
+// all'angolo in basso a sinistra di ciascun giocatore, come nella dama italiana.
+// Le Bianche stanno in basso (righe 5-7) e muovono verso l'alto; le Nere in alto (righe 0-2).
+const W = 1, B = -1;
+const SMART_DEPTH = 3; // profondita' di ragionamento del livello "Attento" (piu' alto = piu' forte)
+
+const sideOf = v => (v > 0 ? 1 : (v < 0 ? -1 : 0));
+const isKing = v => v === 2 || v === -2;
+const fwd = side => (side === W ? -1 : 1);
+const promoRow = side => (side === W ? 0 : 7);
+const inside = (r, c) => r >= 0 && r < 8 && c >= 0 && c < 8;
+const isDark = (r, c) => (r + c) % 2 === 1;
+const clone = b => b.map(row => row.slice());
+
+function newBoard() {
+  const b = Array.from({ length: 8 }, () => Array(8).fill(0));
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 8; c++) if (isDark(r, c)) b[r][c] = B;
+  for (let r = 5; r < 8; r++) for (let c = 0; c < 8; c++) if (isDark(r, c)) b[r][c] = W;
+  return b;
+}
+
+function dirsFor(v) {
+  if (isKing(v)) return [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+  const f = fwd(sideOf(v));
+  return [[f, -1], [f, 1]];
+}
+
+function simpleMoves(b, side) {
+  const out = [];
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const v = b[r][c];
+    if (sideOf(v) !== side) continue;
+    for (const [dr, dc] of dirsFor(v)) {
+      const nr = r + dr, nc = c + dc;
+      if (inside(nr, nc) && b[nr][nc] === 0) {
+        out.push({ from: [r, c], path: [[nr, nc]], caps: [], king: isKing(v) });
+      }
+    }
+  }
+  return out;
+}
+
+// Tutte le sequenze di presa possibili (prima di applicare le regole di precedenza).
+// I pezzi mangiati restano sulla scacchiera fino a fine mossa: non si salta due volte lo stesso pezzo.
+function captureSeqs(b, side) {
+  const out = [];
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const v = b[r][c];
+    if (sideOf(v) !== side) continue;
+    const king = isKing(v);
+    b[r][c] = 0; // il pezzo che muove lascia la sua casella
+    const taken = new Set();
+    (function dfs(cr, cc, path, caps) {
+      let found = false;
+      for (const [dr, dc] of dirsFor(v)) {
+        const mr = cr + dr, mc = cc + dc, lr = cr + 2 * dr, lc = cc + 2 * dc;
+        if (!inside(lr, lc)) continue;
+        const t = b[mr][mc];
+        if (sideOf(t) !== -side) continue;          // serve un pezzo avversario
+        if (taken.has(mr * 8 + mc)) continue;        // mai due volte lo stesso pezzo
+        if (!king && isKing(t)) continue;            // la pedina non mangia la dama
+        if (b[lr][lc] !== 0) continue;               // la casella di arrivo deve essere libera
+        found = true;
+        taken.add(mr * 8 + mc);
+        const np = path.concat([[lr, lc]]);
+        const ncaps = caps.concat([{ r: mr, c: mc, k: isKing(t) }]);
+        if (!king && lr === promoRow(side)) {
+          out.push({ from: [r, c], path: np, caps: ncaps, king: false }); // promozione: la mossa finisce
+        } else {
+          dfs(lr, lc, np, ncaps);
+        }
+        taken.delete(mr * 8 + mc);
+      }
+      if (!found && caps.length) out.push({ from: [r, c], path: path, caps: caps, king: king });
+    })(r, c, [], []);
+    b[r][c] = v;
+  }
+  return out;
+}
+
+// Legge della maggioranza e precedenze della dama italiana.
+// "reason" dice qual e' la prima regola che ha escluso delle prese.
+function filterCaptures(seqs) {
+  let list = seqs, reason = null;
+  const narrow = (fn, why) => {
+    const nl = fn(list);
+    if (nl.length < list.length) { if (!reason) reason = why; list = nl; }
+  };
+  narrow(l => { const m = Math.max(...l.map(s => s.caps.length)); return l.filter(s => s.caps.length === m); }, 'count');
+  narrow(l => (l.some(s => s.king) ? l.filter(s => s.king) : l), 'king');
+  narrow(l => {
+    const kc = s => s.caps.filter(x => x.k).length;
+    const m = Math.max(...l.map(kc));
+    return l.filter(s => kc(s) === m);
+  }, 'kings');
+  narrow(l => {
+    const first = s => { const i = s.caps.findIndex(x => x.k); return i < 0 ? 99 : i; };
+    const m = Math.min(...l.map(first));
+    return l.filter(s => first(s) === m);
+  }, 'first');
+  return { list, reason };
+}
+
+function legalMoves(b, side) {
+  const caps = captureSeqs(b, side);
+  if (caps.length) {
+    const f = filterCaptures(caps);
+    return { moves: f.list, capture: true, all: caps, reason: f.reason };
+  }
+  return { moves: simpleMoves(b, side), capture: false, all: [], reason: null };
+}
+
+function applyMove(b, mv) {
+  const nb = clone(b);
+  const fr = mv.from[0], fc = mv.from[1];
+  let v = nb[fr][fc];
+  nb[fr][fc] = 0;
+  for (const cp of mv.caps) nb[cp.r][cp.c] = 0;
+  const last = mv.path[mv.path.length - 1];
+  const side = sideOf(v);
+  if (!isKing(v) && last[0] === promoRow(side)) v = side * 2;
+  nb[last[0]][last[1]] = v;
+  return nb;
+}
+
+// Valutazione dal punto di vista del Bianco (positiva = meglio per il Bianco).
+function evaluate(b) {
+  let s = 0;
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const v = b[r][c];
+    if (!v) continue;
+    const side = sideOf(v);
+    const centre = Math.min(c, 7 - c) + Math.min(r, 7 - r);
+    let val;
+    if (isKing(v)) {
+      val = 320 + centre;
+    } else {
+      const adv = side === W ? 7 - r : r;
+      val = 100 + adv * 4 + centre;
+      if (r === (side === W ? 7 : 0)) val += 6; // pedine sulla fila di partenza: difesa
+    }
+    s += side * val;
+  }
+  return s;
+}
+
+function negamax(b, side, depth, alpha, beta, ext) {
+  const lm = legalMoves(b, side);
+  if (!lm.moves.length) return -100000 - depth; // chi non ha mosse perde; meglio vincere presto
+  if (depth <= 0) {
+    if (lm.capture && ext > 0) { depth = 1; ext--; }   // non fermarsi in mezzo a uno scambio
+    else return side * evaluate(b);
+  }
+  let best = -Infinity;
+  for (const mv of lm.moves) {
+    const sc = -negamax(applyMove(b, mv), -side, depth - 1, -beta, -alpha, ext);
+    if (sc > best) best = sc;
+    if (best > alpha) alpha = best;
+    if (alpha >= beta) break;
+  }
+  return best;
+}
+
+function chooseMove(b, side, level) {
+  const moves = legalMoves(b, side).moves;
+  if (!moves.length) return null;
+  if (level === 'easy') return moves[Math.floor(Math.random() * moves.length)];
+  const scored = moves.map(mv => ({
+    mv,
+    sc: -negamax(applyMove(b, mv), -side, SMART_DEPTH - 1, -Infinity, Infinity, 4)
+  }));
+  const best = Math.max(...scored.map(x => x.sc));
+  const pool = scored.filter(x => x.sc >= best - 2); // un po' di varieta' tra mosse equivalenti
+  return pool[Math.floor(Math.random() * pool.length)].mv;
+}
+// ==== ENGINE END ====
+
+// ---------------------------------------------------------------- Interfaccia
+const $ = id => document.getElementById(id);
+const FILES = 'abcdefgh';
+const REASONS = {
+  count: '⚠️ Regola della maggioranza: devi fare la presa che mangia più pezzi! Le pedine che possono farla sono illuminate.',
+  king: '⚠️ A parità di pezzi mangiati devi mangiare con la dama! La pedina giusta è illuminata.',
+  kings: '⚠️ Devi fare la presa che mangia più dame! La pedina giusta è illuminata.',
+  first: '⚠️ Devi fare la presa che incontra per prima una dama! La pedina giusta è illuminata.'
+};
+
+const S = {
+  board: null, turn: W, mode: 'cpu', level: 'easy', human: W,
+  over: false, noProg: 0, history: [], sel: null, legal: null,
+  busy: false, flipped: false, last: null, timer: null
+};
+
+const conflict = L => !!L && L.capture && L.moves.length < L.all.length;
+const humanTurn = () => !S.over && !(S.mode === 'cpu' && S.turn !== S.human);
+
+function setStatus(msg, kind) {
+  const el = $('status');
+  el.textContent = msg;
+  el.className = kind || '';
+}
+
+function showSection(id) {
+  $('menu').classList.toggle('hidden', id !== 'menu');
+  $('game').classList.toggle('hidden', id !== 'game');
+}
+
+function startGame(mode, level) {
+  clearTimeout(S.timer);
+  Object.assign(S, {
+    board: newBoard(), turn: W, mode, level, over: false, noProg: 0,
+    history: [], sel: null, busy: false, last: null, flipped: false
+  });
+  $('overlay').classList.add('hidden');
+  $('bFlip').classList.toggle('hidden', mode === 'cpu');
+  $('modeLabel').textContent = mode === 'cpu'
+    ? 'Tu: Bianche ⚪ · Computer: Nere ⚫ · Livello ' + (level === 'easy' ? 'Facile 🐣' : 'Attento 🦊')
+    : 'Due giocatori · Bianche ⚪ contro Nere ⚫';
+  showSection('game');
+  beginTurn();
+}
+
+function turnMessage() {
+  const L = S.legal;
+  if (L && L.capture) {
+    if (conflict(L)) return { msg: REASONS[L.reason], kind: 'warn' };
+    return { msg: 'Hai una presa obbligatoria: devi mangiare! 🎯', kind: 'info' };
+  }
+  const who = S.mode === 'cpu' ? 'Tocca a te!' : 'Tocca alle ' + (S.turn === W ? 'Bianche' : 'Nere') + '.';
+  return { msg: who + ' Scegli una pedina.', kind: '' };
+}
+
+function beginTurn() {
+  S.sel = null;
+  S.legal = legalMoves(S.board, S.turn);
+  if (!S.legal.moves.length) { endGame(-S.turn); return; }
+  if (S.noProg >= 40) { endGame(0); return; }
+  const cpuTurn = S.mode === 'cpu' && S.turn !== S.human;
+  S.busy = cpuTurn;
+  render();
+  if (cpuTurn) {
+    setStatus('Il computer sta pensando… 🤔');
+    S.timer = setTimeout(cpuPlay, 700);
+    return;
+  }
+  const t = turnMessage();
+  setStatus(t.msg, t.kind);
+}
+
+function cpuPlay() {
+  if (S.over) return;
+  const mv = chooseMove(S.board, S.turn, S.level);
+  if (!mv) { endGame(-S.turn); return; }
+  let i = 0;
+  const step = () => {
+    S.sel = { from: mv.from, path: mv.path.slice(0, i + 1), caps: mv.caps.slice(0, i + 1), cpu: true };
+    render();
+    i++;
+    if (i < mv.path.length) S.timer = setTimeout(step, 500);
+    else S.timer = setTimeout(() => commit(mv), 450);
+  };
+  step();
+}
+
+function commit(mv) {
+  S.history.push({ board: clone(S.board), turn: S.turn, noProg: S.noProg });
+  const mover = S.board[mv.from[0]][mv.from[1]];
+  S.noProg = (mv.caps.length || !isKing(mover)) ? 0 : S.noProg + 1;
+  S.board = applyMove(S.board, mv);
+  S.last = { from: mv.from, to: mv.path[mv.path.length - 1] };
+  S.turn = -S.turn;
+  beginTurn();
+}
+
+function candidates() {
+  const sel = S.sel;
+  return S.legal.moves.filter(m =>
+    m.from[0] === sel.from[0] && m.from[1] === sel.from[1] &&
+    sel.path.every((p, i) => m.path[i][0] === p[0] && m.path[i][1] === p[1]));
+}
+
+function trySelect(r, c) {
+  const mine = S.legal.moves.filter(m => m.from[0] === r && m.from[1] === c);
+  if (!mine.length) {
+    if (S.legal.capture) {
+      setStatus(conflict(S.legal)
+        ? REASONS[S.legal.reason]
+        : 'Questa pedina non può mangiare. Hai una presa obbligatoria: scegli un\'altra pedina!', 'warn');
+    } else {
+      setStatus('Questa pedina non si può muovere ora. Provane un\'altra!', 'warn');
+    }
+    return;
+  }
+  S.sel = { from: [r, c], path: [], caps: [] };
+  setStatus(S.legal.capture
+    ? 'Tocca la casella dove atterri mangiando 🎯'
+    : 'Tocca una casella evidenziata per muovere.', 'info');
+  render();
+}
+
+function onSquare(r, c) {
+  if (S.over || S.busy || !S.legal || !humanTurn()) return;
+  const sel = S.sel;
+  const v = S.board[r][c];
+  if (sel) {
+    const idx = sel.path.length;
+    const next = candidates().filter(m => m.path[idx] && m.path[idx][0] === r && m.path[idx][1] === c);
+    if (next.length) {
+      sel.path.push([r, c]);
+      if (S.legal.capture) sel.caps.push(next[0].caps[idx]);
+      const done = next.find(m => m.path.length === sel.path.length);
+      if (done) { commit(done); return; }
+      setStatus('Ottimo! Continua a mangiare con la stessa pedina ✨', 'info');
+      render();
+      return;
+    }
+    const here = idx ? sel.path[idx - 1] : sel.from;
+    if (here[0] === r && here[1] === c) {        // tocco la pedina scelta: annullo
+      S.sel = null;
+      const t = turnMessage();
+      setStatus(t.msg, t.kind);
+      render();
+      return;
+    }
+    if (idx === 0 && sideOf(v) === S.turn) { trySelect(r, c); return; }
+    if (idx > 0) setStatus('Devi continuare a mangiare con la stessa pedina! (Tocca la pedina per annullare.)', 'warn');
+    return;
+  }
+  if (sideOf(v) === S.turn) trySelect(r, c);
+}
+
+function render() {
+  const view = clone(S.board);
+  const taken = new Set();
+  let cur = null;
+  const sel = S.sel;
+  if (sel && sel.path.length) {
+    const v = view[sel.from[0]][sel.from[1]];
+    view[sel.from[0]][sel.from[1]] = 0;
+    sel.caps.forEach(cp => taken.add(cp.r * 8 + cp.c));
+    cur = sel.path[sel.path.length - 1];
+    view[cur[0]][cur[1]] = v;
+  }
+  const dests = new Set();
+  if (sel && !sel.cpu && S.legal) {
+    candidates().forEach(m => { const d = m.path[sel.path.length]; if (d) dests.add(d[0] * 8 + d[1]); });
+  }
+  const must = new Set();
+  if (humanTurn() && conflict(S.legal) && !(sel && sel.path.length)) {
+    S.legal.moves.forEach(m => must.add(m.from[0] * 8 + m.from[1]));
+  }
+  const destCls = S.legal && S.legal.capture ? ' dest cap' : ' dest';
+
+  let html = '';
+  for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) {
+    const r = S.flipped ? 7 - i : i, c = S.flipped ? 7 - j : j;
+    const dark = isDark(r, c), k = r * 8 + c, v = view[r][c];
+    let cls = 'sq ' + (dark ? 'dark' : 'light');
+    const isSel = sel && ((!sel.path.length && sel.from[0] === r && sel.from[1] === c) || (cur && cur[0] === r && cur[1] === c));
+    if (isSel) cls += ' sel';
+    if (S.last && !sel && ((S.last.from[0] === r && S.last.from[1] === c) || (S.last.to[0] === r && S.last.to[1] === c))) cls += ' last';
+    if (dests.has(k)) cls += destCls;
+    let inner = '';
+    if (v) {
+      const pc = 'piece ' + (v > 0 ? 'w' : 'b') + (isKing(v) ? ' king' : '') + (must.has(k) ? ' must' : '') + (taken.has(k) ? ' taken' : '');
+      inner = '<div class="' + pc + '">' + (isKing(v) ? '<svg class="crown" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2.5 19.5h19v-2.5h-19zM3 16l-1-10 5.5 4.5L12 3l4.5 7.5L22 6l-1 10z"/></svg>' : '') + '</div>';
+    }
+    const label = FILES[c] + (8 - r) + (v ? (v > 0 ? ' bianca' : ' nera') + (isKing(v) ? ' dama' : '') : ' vuota');
+    html += '<div class="' + cls + '" data-r="' + r + '" data-c="' + c + '"' +
+      (dark ? ' role="gridcell" tabindex="0" aria-label="' + label + '"' : ' role="gridcell"') + '>' + inner + '</div>';
+  }
+  $('board').innerHTML = html;
+
+  let w = 0, b = 0;
+  S.board.forEach(row => row.forEach(v => { if (v > 0) w++; else if (v < 0) b++; }));
+  $('cntW').textContent = w;
+  $('cntB').textContent = b;
+
+  let turnTxt;
+  if (S.over) turnTxt = 'Partita finita';
+  else if (S.mode === 'cpu') turnTxt = S.turn === S.human ? 'Tocca a te 😊' : 'Tocca al computer 🤖';
+  else turnTxt = S.turn === W ? 'Tocca alle Bianche ⚪' : 'Tocca alle Nere ⚫';
+  $('turn').textContent = turnTxt;
+  $('bUndo').disabled = S.busy || !S.history.length;
+}
+
+function endGame(winner) {
+  S.over = true; S.busy = false; S.sel = null;
+  clearTimeout(S.timer);
+  render();
+  let emoji = '🎉', title, text;
+  if (winner === 0) {
+    emoji = '🤝'; title = 'Patta!'; text = 'Nessuno ha vinto: la partita finisce in pareggio.';
+  } else if (S.mode === 'cpu') {
+    if (winner === S.human) { title = 'Hai vinto! Bravissimo!'; text = 'Hai battuto il computer. 🏆'; }
+    else { emoji = '🤖'; title = 'Ha vinto il computer'; text = 'Non ti arrendere: riprova, puoi farcela!'; }
+  } else {
+    title = 'Hanno vinto le ' + (winner === W ? 'Bianche ⚪' : 'Nere ⚫') + '!';
+    text = 'Complimenti, bella partita!';
+  }
+  setStatus(winner === 0 ? 'Patta!' : 'Partita finita!', 'info');
+  $('ovEmoji').textContent = emoji;
+  $('ovTitle').textContent = title;
+  $('ovText').textContent = text;
+  $('overlay').classList.remove('hidden');
+}
+
+function undo() {
+  if (S.busy || !S.history.length) return;
+  let snap = null;
+  if (S.mode === 'cpu') {
+    while (S.history.length) {
+      const s = S.history.pop();
+      if (s.turn === S.human) { snap = s; break; }
+    }
+    if (!snap) return;
+  } else {
+    snap = S.history.pop();
+  }
+  clearTimeout(S.timer);
+  S.board = snap.board; S.turn = snap.turn; S.noProg = snap.noProg;
+  S.over = false; S.last = null;
+  $('overlay').classList.add('hidden');
+  beginTurn();
+}
+
+// ---------------------------------------------------------------- Eventi
+$('bEasy').addEventListener('click', () => startGame('cpu', 'easy'));
+$('bSmart').addEventListener('click', () => startGame('cpu', 'smart'));
+$('bTwo').addEventListener('click', () => startGame('two', null));
+$('bNew').addEventListener('click', () => startGame(S.mode, S.level));
+$('bMenu').addEventListener('click', () => { clearTimeout(S.timer); S.busy = false; $('overlay').classList.add('hidden'); showSection('menu'); });
+$('bUndo').addEventListener('click', undo);
+$('bFlip').addEventListener('click', () => { S.flipped = !S.flipped; render(); });
+$('ovAgain').addEventListener('click', () => startGame(S.mode, S.level));
+$('ovMenu').addEventListener('click', () => { $('overlay').classList.add('hidden'); showSection('menu'); });
+$('ovClose').addEventListener('click', () => $('overlay').classList.add('hidden'));
+
+$('board').addEventListener('click', e => {
+  const sq = e.target.closest('.sq');
+  if (sq) onSquare(+sq.dataset.r, +sq.dataset.c);
+});
+$('board').addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const sq = e.target.closest('.sq');
+  if (sq) { e.preventDefault(); onSquare(+sq.dataset.r, +sq.dataset.c); }
+});
+})();
+</script>
+</body>
+</html>
